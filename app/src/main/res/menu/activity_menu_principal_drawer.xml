@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_encuesta"
+            android:icon="@drawable/ic_assignment_black_24dp"
+            android:title="Encuesta (Pronto...)" />
+        <item
+            android:id="@+id/nav_inspeccion"
+            android:icon="@drawable/ic_assignment_late_black_24dp"
+            android:title="Inspección (Pronto...)" />
+        <item
+            android:id="@+id/nav_verif"
+            android:icon="@drawable/ic_assignment_turned_in_black_24dp"
+            android:title="Verificación (Pronto...)" />
+
+    </group>
+
+    <item android:title="Comunicarse">
+        <menu>
+            <item
+                android:id="@+id/nav_share"
+                android:icon="@drawable/ic_menu_share"
+                android:title="Llamar" />
+            <item
+                android:id="@+id/nav_credencial"
+                android:icon="@drawable/ic_assignment_ind_black_24dp"
+                android:title="Credencial" />
+        </menu>
+    </item>
+
+</menu>

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    android:padding="@dimen/dialog_body">
+
+
+    <TextView
+        android:id="@+id/info_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:paddingTop="@dimen/padding_between"
+        android:text="Su cuenta no se encuentra vinculada a ningun celular"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:paddingRight="@dimen/padding_between"
+        android:paddingLeft="@dimen/padding_between"
+        android:textColor="@color/colorAccent"
+        android:textStyle="bold"
+        android:textSize="20dp" />
+
+    <TextView
+        android:id="@+id/info_text2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="start"
+        android:paddingBottom="@dimen/padding_between"
+        android:paddingTop="@dimen/padding_between"
+        android:paddingRight="@dimen/padding_between"
+        android:paddingLeft="@dimen/padding_between"
+        android:text="Al parecer es la primera vez que utiliza su cuenta. Presione ENVIAR para vincular esta cuenta con este celular, si no presione CANCELAR."
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:layout_below="@+id/info_text"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:textSize="14dp"
+        android:textAlignment="textStart" />
+
+    <TextView
+        android:id="@+id/info_text3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="start"
+        android:paddingRight="@dimen/padding_between"
+        android:paddingLeft="@dimen/padding_between"
+        android:paddingBottom="@dimen/padding_between"
+        android:text="Si tiene alguna duda, o cree que su cuenta debería ya estar vinculada con algún celular, presione el botón AYUDA para contactarse con BIGSOMER"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:layout_below="@+id/info_text2"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:textAlignment="textStart" />
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingRight="8dp"
+        android:paddingLeft="8dp"
+        android:weightSum="1"
+        android:layout_below="@+id/info_text3">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/textView2"
+            android:layout_weight="1" />
+
+        <Button
+            android:id="@+id/enviar_boton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=" ENVIAR "
+            android:paddingTop="5dp"
+            android:paddingBottom="10dp"
+            android:textColor="@color/colorPrimary"
+            android:layout_below="@+id/info_text2"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="false"
+            android:layout_alignRight="@+id/entrar_boton"
+            android:layout_alignEnd="@+id/entrar_boton"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_weight="1"
+            android:textSize="16dp"
+            android:layout_marginRight="10dp" />
+
+        <Button
+            android:id="@+id/cancelar_boton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingTop="5dp"
+            android:paddingBottom="10dp"
+            android:text=" CANCELAR "
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:textColor="@color/colorPrimary"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:textSize="16dp"
+            android:layout_weight="1" />
+    </LinearLayout>
+
+
+</RelativeLayout>

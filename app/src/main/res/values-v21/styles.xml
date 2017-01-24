@@ -1,0 +1,15 @@
+<resources>
+
+    <style name="AppTheme.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+
+    <style name="texto_pregunta">
+        <item name="android:textColor">@color/colorPrimaryDark</item>
+        <item name="android:textSize">20dp</item>
+        <item name="android:padding">2dip</item>
+    </style>
+</resources>

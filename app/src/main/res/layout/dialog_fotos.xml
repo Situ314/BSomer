@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    android:padding="@dimen/dialog_body">
+
+
+    <TextView
+        android:id="@+id/info_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:paddingTop="@dimen/padding_between"
+        android:text="¿De dónde obtendrá la foto?"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:paddingRight="@dimen/padding_between"
+        android:paddingLeft="@dimen/padding_between"
+        android:textColor="@color/colorAccent"
+        android:textStyle="bold"
+        android:textSize="20dp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+    <TextView
+        android:id="@+id/informacion"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/info_text"
+        android:text="RECUERDE que si elige una nueva foto, ésta reemplazará la anterior"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:paddingRight="@dimen/padding_between"
+        android:paddingLeft="@dimen/padding_between"
+        android:textColor="@color/colorPrimaryDark"
+        android:textSize="17dp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+    <Button
+        android:id="@+id/positiva"
+        style="@style/Widget.AppCompat.Button.Borderless"            android:layout_weight="1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="start"
+        android:drawableLeft="@drawable/ic_camera_alt_black_24dp"
+        android:drawableStart="@drawable/ic_camera_alt_black_24dp"
+        android:drawableEnd="@drawable/ic_keyboard_arrow_right_black_24dp"
+        android:drawableRight="@drawable/ic_keyboard_arrow_right_black_24dp"
+        android:paddingBottom="@dimen/padding_between"
+        android:paddingTop="@dimen/padding_between"
+        android:paddingRight="@dimen/padding_between"
+        android:paddingLeft="@dimen/padding_between"
+        android:text="  CÁMARA"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:layout_below="@+id/informacion"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:textSize="18dp"
+        android:textAlignment="textStart"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+    <Button
+        android:id="@+id/negativa"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="start"
+        style="@style/Widget.AppCompat.Button.Borderless"
+        android:paddingBottom="@dimen/padding_between"
+        android:paddingTop="@dimen/padding_between"
+        android:paddingRight="@dimen/padding_between"
+        android:paddingLeft="@dimen/padding_between"
+        android:text="  GALERÍA"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:layout_below="@+id/positiva"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:drawableLeft="@drawable/ic_folder_shared_black_24dp"
+        android:drawableStart="@drawable/ic_folder_shared_black_24dp"
+        android:drawableEnd="@drawable/ic_keyboard_arrow_right_black_24dp"
+        android:drawableRight="@drawable/ic_keyboard_arrow_right_black_24dp"
+        android:textSize="18dp"
+        android:textAlignment="textStart"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        />
+
+</RelativeLayout>

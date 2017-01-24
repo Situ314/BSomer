@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    android:padding="10dp">
+
+
+    <TextView
+        android:id="@+id/info_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingTop="@dimen/padding_between"
+        android:text="ERROR EN LA CONFIGURACIÓN DE FECHA Y HORA"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:paddingRight="@dimen/padding_between"
+        android:paddingLeft="@dimen/padding_between"
+        android:textColor="@color/colorAccent"
+        android:textStyle="bold"
+        android:textSize="20dp"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true" />
+
+    <TextView
+        android:id="@+id/info_text2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="start"
+        android:paddingBottom="@dimen/padding_between"
+        android:paddingTop="@dimen/padding_between"
+        android:paddingRight="10dp"
+        android:paddingLeft="@dimen/padding_between"
+        android:text="La hora y fecha del celular no están configuradas de forma automática. Por favor active la opción de obtener fecha y hora automáticamente"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textSize="14dp"
+        android:textAlignment="textStart"
+        android:layout_below="@+id/info_text"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true" />
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingRight="8dp"
+        android:paddingLeft="8dp"
+        android:weightSum="1"
+        android:layout_below="@+id/info_text2">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/textView2"
+            android:layout_weight="1" />
+
+        <Button
+            android:id="@+id/si_boton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="CONFIGURAR FECHA Y HORA"
+            android:paddingTop="5dp"
+            android:paddingBottom="10dp"
+            android:textColor="@color/colorPrimary"
+            android:layout_below="@+id/info_text2"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="false"
+            android:layout_alignRight="@+id/entrar_boton"
+            android:layout_alignEnd="@+id/entrar_boton"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:textSize="16dp"
+            android:layout_marginRight="10dp" />
+
+
+    </LinearLayout>
+
+
+</RelativeLayout>
