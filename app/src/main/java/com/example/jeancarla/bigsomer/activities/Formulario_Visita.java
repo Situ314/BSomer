@@ -211,11 +211,36 @@ public class Formulario_Visita extends AppCompatActivity {
             dialog = new Dialog(Formulario_Visita.this);
             dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
             dialog.setContentView(R.layout.dialog_nuevo);
-            dialog.show();
+           dialog.show();
             if (lat != 0 && lon != 0) {
 
                 if(!et_comentarios.getText().equals("") && !et_fecha.getText().equals("")){
-                    enviar();
+
+                    TextView titulo = (TextView) dialog.findViewById(R.id.info_text);
+                    titulo.setText("ENVIAR DATOS DE LA VISITA");
+
+                    TextView info = (TextView) dialog.findViewById(R.id.info_text2);
+                    info.setText("¿Está seguro de querer enviar la información de la visita? Si está seguro presione ENVIAR");
+
+                    TextView info2 = (TextView) dialog.findViewById(R.id.info_text3);
+                    info2.setVisibility(View.GONE);
+
+                    Button b_enviar = (Button) dialog.findViewById(R.id.enviar_boton);
+                    b_enviar.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            enviar();
+                            dialog.dismiss();
+                        }
+                    });
+
+                    Button b_cancelar = (Button) dialog.findViewById(R.id.cancelar_boton);
+                    b_cancelar.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            dialog.dismiss();
+                        }
+                    });
                 }else{
                     TextView titulo = (TextView) dialog.findViewById(R.id.info_text);
                     titulo.setText("TODOS LOS CAMPOS DEBEN ESTAR LLENOS");
@@ -351,6 +376,7 @@ public class Formulario_Visita extends AppCompatActivity {
                             public void onErrorResponse(VolleyError error) {
                                 Log.d("SITU", "Error Volley: " + error.getMessage());
                                 Toast.makeText(getApplicationContext(), "No se pudo comunicar con el servidor en este momento, inténtelo más tarde...", Toast.LENGTH_LONG).show();
+
                                 Intent i = new Intent(getApplicationContext(), MenuPrincipal.class);
                                 finish();
                                 startActivity(i);
@@ -390,12 +416,15 @@ public class Formulario_Visita extends AppCompatActivity {
 
             switch (estado) {
                 case "1":
-
                     Log.e("SITU ENVIAR: ", "BIEN");
-                    // Enviar código de éxito
-                    //getActivity().setResult(Activity.RESULT_OK);
-                    // Terminar actividad
-                    //getActivity().finish();
+                        Toast.makeText(getApplicationContext(), "Informacion de Visita subida correctamente", Toast.LENGTH_LONG).show();
+                    ContentValues values2 = new ContentValues();
+                    values2.put("estado", "subida");
+                    db.update("visita", values2, "id_sol" + " = ?", new String[]{id_ver});
+                    Intent i = new Intent(getApplicationContext(), MenuPrincipal.class);
+                    finish();
+                    startActivity(i);
+                    db.close();
                     break;
 
                 case "2":
