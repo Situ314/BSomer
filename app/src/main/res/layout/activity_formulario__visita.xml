@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".activities.Formulario_Positiva"
+    tools:context=".activities.Formulario_Visita"
     android:orientation="vertical">
 
     <android.support.design.widget.CoordinatorLayout xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -54,7 +54,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textAppearance="?android:attr/textAppearanceLarge"
-                    android:text="Datos Verificación"
+                    android:text="Datos Visita"
                     android:id="@+id/tipo_ver"
                     android:layout_gravity="center_vertical"
                     android:textStyle="bold"
@@ -86,7 +86,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:textAppearance="?android:attr/textAppearanceLarge"
-                        android:text="Nombre del entrevistado"
+                        android:text="Comentarios de por qué se realizo la visita"
                         android:id="@+id/nombre_static"
                         android:textColor="@color/colorPrimaryDark"
                         android:textSize="20dp"
@@ -95,56 +95,39 @@
                     <EditText
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:id="@+id/v_nombre"
+                        android:id="@+id/v_comentarios"
                         android:textSize="20dp" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:textAppearance="?android:attr/textAppearanceLarge"
-                        android:text="Cargo del Entrevistado"
+                        android:text="Cuándo se planea volver a realizar la visita"
                         android:id="@+id/cargo_static"
                         android:textColor="@color/colorPrimaryDark"
                         android:textSize="20dp"
                         android:textStyle="bold" />
 
-                    <EditText
+                    <LinearLayout
+                        android:orientation="horizontal"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:id="@+id/v_cargo"
-                        android:textSize="20dp" />
+                        android:layout_height="match_parent">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceLarge"
-                        android:text="CI del Entrevistado"
-                        android:id="@+id/ci_static"
-                        android:textColor="@color/colorPrimaryDark"
-                        android:textSize="20dp"
-                        android:textStyle="bold" />
+                        <EditText
+                            android:layout_width="200dp"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/v_fecha"
+                            android:textSize="20dp" />
 
-                    <EditText
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:id="@+id/v_ci"
-                        android:textSize="20dp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="?android:attr/textAppearanceLarge"
-                        android:text="Comentarios"
-                        android:id="@+id/comentarios_static"
-                        android:textColor="@color/colorPrimaryDark"
-                        android:textSize="20dp"
-                        android:textStyle="bold" />
-
-                    <EditText
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:id="@+id/v_com"
-                        android:textSize="20dp" />
+                        <Button
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="ELEGIR"
+                            android:textColor="@android:color/white"
+                            android:id="@+id/b_elegir"
+                            android:background="@drawable/rectangulo_login"
+                            android:layout_gravity="center_horizontal" />
+                    </LinearLayout>
 
                 </LinearLayout>
 

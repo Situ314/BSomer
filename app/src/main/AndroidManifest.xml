@@ -39,7 +39,7 @@
         <activity android:name=".activities.Lista_Clientes" />
         <activity android:name=".activities.Lista_Tareas" />
         <activity
-            android:name=".activities.Formulario_verif"
+            android:name=".activities.Formulario_Positiva"
             android:configChanges="orientation|screenSize"
             android:screenOrientation="portrait" />
         <activity android:name=".activities.Mapa_Detalles" />
@@ -73,11 +73,14 @@
             android:name=".activities.Formulario_Historial_Negativa"
             android:configChanges="orientation|screenSize"
             android:screenOrientation="portrait" />
-        <activity android:name=".activities.Fotos_Faltantes"></activity>
-        <activity android:name=".helpers.CaptureSignature"
-            android:screenOrientation="landscape"
-            android:configChanges="orientation">></activity>
-
+        <activity android:name=".activities.Fotos_Faltantes" />
+        <activity
+            android:name=".helpers.CaptureSignature"
+            android:configChanges="orientation"
+            android:screenOrientation="landscape">
+            >
+        </activity>
+        <activity android:name=".activities.Formulario_Visita"></activity>
     </application>
 
 </manifest>

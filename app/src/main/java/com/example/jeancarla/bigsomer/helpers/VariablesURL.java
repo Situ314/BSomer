@@ -38,6 +38,7 @@ public class VariablesURL {
     public static final String INSERT = "http://" + IP + "guardar_respuestas.php";
     public static final String INSERT_FOTOS = "http://" + IP + "guardar_fotos.php";
     public static final String INSERT_NEGA = "http://" + IP + "guardar_negativa.php";
+    public static final String INSERT_VISITA = "http://" + IP + "guardar_visita.php";
     public static final String GET_FORM = "http://" + IP + "descargar_formularios_firma.php?tipo=";
     public static final String UPDATE = "http://" + IP + PUERTO_HOST + "/actualizar_meta.php";
     public static final String DELETE = "http://" + IP + PUERTO_HOST + "/borrar_meta.php";

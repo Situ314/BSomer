@@ -1,6 +1,5 @@
 package com.example.jeancarla.bigsomer.adapters;
 
-import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
@@ -18,7 +17,8 @@ import android.widget.TextView;
 
 
 import com.example.jeancarla.bigsomer.activities.Formulario_Negativa;
-import com.example.jeancarla.bigsomer.activities.Formulario_verif;
+import com.example.jeancarla.bigsomer.activities.Formulario_Positiva;
+import com.example.jeancarla.bigsomer.activities.Formulario_Visita;
 import com.example.jeancarla.bigsomer.helpers.Funciones;
 import com.example.jeancarla.bigsomer.activities.Mapa_Detalles;
 import com.example.jeancarla.bigsomer.R;
@@ -109,7 +109,7 @@ Contexto donde actua el recycler view
 
         Button posi = (Button) dialog.findViewById(R.id.positiva);
         Button nega = (Button) dialog.findViewById(R.id.negativa);
-
+        Button visita = (Button) dialog.findViewById(R.id.visita);
 
         final String cliente = items.get(position).getCliente();
         final String tipo = items.get(position).getIdtipo();
@@ -117,7 +117,7 @@ Contexto donde actua el recycler view
         posi.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent i = new Intent(context, Formulario_verif.class);
+                Intent i = new Intent(context, Formulario_Positiva.class);
                 Bundle bundle = new Bundle();
                 bundle.putSerializable("cliente", cliente);
                 bundle.putSerializable("tipo", tipo);
@@ -136,6 +136,19 @@ Contexto donde actua el recycler view
                 Bundle bundle = new Bundle();
                 bundle.putSerializable("cliente", cliente);
                 bundle.putSerializable("tipo", tipo);
+                bundle.putSerializable("id_ver", id_ver);
+                i.putExtras(bundle);
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+                context.startActivity(i);
+            }
+        });
+
+        visita.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(context, Formulario_Visita.class);
+                Bundle bundle = new Bundle();
                 bundle.putSerializable("id_ver", id_ver);
                 i.putExtras(bundle);
                 i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

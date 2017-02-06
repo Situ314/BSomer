@@ -20,7 +20,6 @@ package com.example.jeancarla.bigsomer.helpers;
         import android.provider.MediaStore.Images;
         import android.util.AttributeSet;
         import android.util.Log;
-        import android.view.Gravity;
         import android.view.MotionEvent;
         import android.view.View;
         import android.view.View.OnClickListener;
@@ -32,7 +31,7 @@ package com.example.jeancarla.bigsomer.helpers;
         import android.widget.Toast;
 
         import com.example.jeancarla.bigsomer.R;
-        import com.example.jeancarla.bigsomer.activities.Formulario_verif;
+        import com.example.jeancarla.bigsomer.activities.Formulario_Positiva;
 
 public class CaptureSignature extends Activity {
 
@@ -121,7 +120,7 @@ public class CaptureSignature extends Activity {
                     Toast toast = Toast.makeText(CaptureSignature.this, "Firma guardada exitosamente", Toast.LENGTH_SHORT);
 
                     toast.show();}
-                Intent intent = new Intent(CaptureSignature.this, Formulario_verif.class);
+                Intent intent = new Intent(CaptureSignature.this, Formulario_Positiva.class);
                 intent.putExtra("foto_firma", foto_firma);
                    /* Intent intent = new Intent();
                     intent.putExtras(b);

@@ -101,6 +101,7 @@ public class MenuPrincipal extends AppCompatActivity
         historial = (Button) findViewById(R.id.historial);
         fotos_faltantes = (Button) findViewById(R.id.fotos);
 
+        historial.setVisibility(View.GONE);
         setSupportActionBar(toolbar);
 
         datosusuario = fu.DomsinFoto(MenuPrincipal.this, null);

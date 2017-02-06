@@ -67,4 +67,28 @@
         android:layout_alignParentStart="true"
  />
 
+    <Button
+        android:id="@+id/visita"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="start"
+        style="@style/Widget.AppCompat.Button.Borderless"
+        android:paddingBottom="@dimen/padding_between"
+        android:paddingTop="@dimen/padding_between"
+        android:paddingRight="@dimen/padding_between"
+        android:paddingLeft="@dimen/padding_between"
+        android:text="REALIZAR VISITA"
+        android:textStyle="bold"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:layout_below="@+id/negativa"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:drawableEnd="@drawable/ic_keyboard_arrow_right_black_24dp"
+        android:drawableRight="@drawable/ic_keyboard_arrow_right_black_24dp"
+        android:textSize="14dp"
+        android:textAlignment="textStart"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
+        />
+
 </RelativeLayout>

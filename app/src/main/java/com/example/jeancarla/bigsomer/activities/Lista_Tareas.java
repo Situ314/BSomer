@@ -80,6 +80,5 @@ Adaptador del recycler view
         adapter = new TareaAdapter(tareas,getApplicationContext());
         lista.setAdapter(adapter);
 
-
     }
 }

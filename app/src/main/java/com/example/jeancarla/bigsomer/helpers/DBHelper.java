@@ -36,6 +36,9 @@ public class DBHelper extends SQLiteOpenHelper {
         db.execSQL("create table formulario_respuestas(id_fr varchar primary key,lat varchar,lon varchar,fecha_realizada varchar, tipo_ver varchar, acceso_cliente varchar, fotos varchar, firma varchar, respuestas varchar, estado varchar)");
         db.execSQL("create table formulario_negativas(id_fr varchar primary key,lat varchar,lon varchar,fecha_realizada varchar, tipo_ver varchar, acceso_cliente varchar, fotos varchar, nombre varchar,ci varchar,cargo varchar,comentarios varchar, estado varchar)");
         db.execSQL("create table cliente(id_cli varchar,cliente varchar,acceso varchar primary key)");
+        db.execSQL("create table visita(id_sol varchar,lat varchar,lon varchar, comentarios varchar, fecha_realizada varchar, fecha_regreso varchar, estado varchar)");
+
+
     }
 
     //Aquí se actualizará la base de datos

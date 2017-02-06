@@ -106,7 +106,7 @@ public class Mapa_Detalles extends AppCompatActivity implements OnMapReadyCallba
                         posi.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
-                                Intent i=new Intent(getApplicationContext(),Formulario_verif.class);
+                                Intent i=new Intent(getApplicationContext(),Formulario_Positiva.class);
                                 Bundle bundle = new Bundle();
                                 bundle.putSerializable("cliente",acceso_cliente);
                                 bundle.putSerializable("tipo",tipo_ver);

@@ -34,7 +34,6 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -80,6 +79,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -87,7 +87,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-public class Formulario_verif extends AppCompatActivity {
+public class Formulario_Positiva extends AppCompatActivity {
 
     private int controlador;
     private String tipo_final;
@@ -290,7 +290,7 @@ public class Formulario_verif extends AppCompatActivity {
         };
         // Toast.makeText(getApplicationContext(),preguntas.get(0).getPregunta(),Toast.LENGTH_LONG).show();
         // getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-
+    if(!preguntas.isEmpty())
         generarFormulario(preguntas);
 
         setToolbar();
@@ -320,7 +320,7 @@ public class Formulario_verif extends AppCompatActivity {
         int id = item.getItemId();
         if (id == R.id.action_enviar) {
 
-            dialog = new Dialog(Formulario_verif.this);
+            dialog = new Dialog(Formulario_Positiva.this);
             dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
             dialog.setContentView(R.layout.dialog_nuevo);
             dialog.show();
@@ -403,7 +403,7 @@ public class Formulario_verif extends AppCompatActivity {
             }
 
         } else {
-            dialog = new Dialog(Formulario_verif.this);
+            dialog = new Dialog(Formulario_Positiva.this);
             dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
             dialog.setContentView(R.layout.dialog_two);
             dialog.show();
@@ -440,7 +440,7 @@ public class Formulario_verif extends AppCompatActivity {
     /*evento para el boton BACK*/
     @Override
     public void onBackPressed() {
-        dialog = new Dialog(Formulario_verif.this);
+        dialog = new Dialog(Formulario_Positiva.this);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.setContentView(R.layout.dialog_two);
         dialog.show();
@@ -505,7 +505,7 @@ public class Formulario_verif extends AppCompatActivity {
 
                         Opcion[] opciones_f = new Opcion[lst_opciones.size()];
                         opciones_f = lst_opciones.toArray(opciones_f);
-                        adapter = new SpinAdapter(Formulario_verif.this,
+                        adapter = new SpinAdapter(Formulario_Positiva.this,
                                 android.R.layout.simple_spinner_item,
                                 opciones_f);
                         respuestas.setAdapter(adapter);
@@ -550,7 +550,7 @@ public class Formulario_verif extends AppCompatActivity {
                                 mMonth = c.get(Calendar.MONTH);
                                 mDay = c.get(Calendar.DAY_OF_MONTH);
 
-                                DatePickerDialog datePickerDialog = new DatePickerDialog(Formulario_verif.this,
+                                DatePickerDialog datePickerDialog = new DatePickerDialog(Formulario_Positiva.this,
                                         new DatePickerDialog.OnDateSetListener() {
 
                                             @Override
@@ -623,7 +623,7 @@ public class Formulario_verif extends AppCompatActivity {
             button_firma.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Intent intent = new Intent(Formulario_verif.this, CaptureSignature.class);
+                    Intent intent = new Intent(Formulario_Positiva.this, CaptureSignature.class);
                     intent.putExtra("id_ver", id_ver.toString());
                     startActivityForResult(intent,SIGNATURE_ACTIVITY);
                 }
@@ -641,7 +641,8 @@ public class Formulario_verif extends AppCompatActivity {
             Log.e("SITU ERROR CHILDS: ", parent.getChildCount()+"");
             Log.e("SITU ERROR VIEW nro: ", ""+q);
             Log.e("SITU ERROR VIEW: ", v.toString());
-            if (v instanceof Spinner) {
+            System.out.println("MEL:"+ Arrays.toString(lst_adapter.toArray()));
+             if (v instanceof Spinner) {
                 int check = 0;
                 Spinner res = (Spinner) v;
                 Log.e("SITU ERROR CONTAR: ", (q - 4)+"");
@@ -662,6 +663,10 @@ public class Formulario_verif extends AppCompatActivity {
                     final int pos = q;
                     final TextView pregunta_especial = new TextView(getApplicationContext());
                     final EditText respuesta_especial = (EditText) getLayoutInflater().inflate(R.layout.edittext_verif, null);
+                    final Spinner respuesta_especial_sp = (Spinner) getLayoutInflater().inflate(R.layout.spinner_verif, null);
+
+
+                    final List<Opcion> lst_opciones = new ArrayList<>();
                     parent.addView(pregunta_especial, pos + 1);
                     lst_spinner.add(q-3,null);
                     lst_adapter.add(q-3,null);
@@ -683,7 +688,6 @@ public class Formulario_verif extends AppCompatActivity {
                             Log.e("SITU ERROR OBJ: ", lst_spinner.toString());
                             Log.e("SITU ERROR ADP: ", lst_adapter.toString());
 
-
                             if(!fin.getItem(position).getDependientes().equals("0")) {
                                 Formulario get = fu.getFormulario(fin.getItem(position).getDependientes(), datos_verificacion);
                                 pregunta_especial.setText(get.getPregunta());
@@ -692,16 +696,42 @@ public class Formulario_verif extends AppCompatActivity {
                                 pregunta_especial.setTypeface(null, Typeface.BOLD);
                                 String tipo_v = get.getTipo();
 
-                                respuesta_especial.setTag(get.getId() + "|" + get.getTipo());
+                                if(tipo_v.equals("1")) {
+                                    parent.removeView(respuesta_especial);
+                                    parent.addView(respuesta_especial_sp, pos+2);
+                                    String[] opciones = get.getOpciones().split("-");
+                                    String[] idopciones = get.getIdopciones().split("-");
+                                    String[] dependientes = get.getDependientes().split("-");
 
-                             //   respuesta_especial.setText("No procede");
+                                    final List<Opcion> lst_opciones = new ArrayList<>();
+                                    for (int j = 0; j < opciones.length; j++) {
+                                        String value = get.getId().toString() + "|" + get.getTipo() + "|" + idopciones[j];
+                                        Opcion op = new Opcion(value, opciones[j], dependientes[j]);
+                                        Log.e("SITU ERROR: ", get.getId().toString() + "|" + get.getTipo() + "|" + idopciones[j]);
+                                        lst_opciones.add(op);
+                                    }
 
-                                if (!fin.getItem(position).getDependientes().equals("0")) {
+                                    Opcion[] opciones_f = new Opcion[lst_opciones.size()];
+                                    opciones_f = lst_opciones.toArray(opciones_f);
+                                    adapter = new SpinAdapter(Formulario_Positiva.this,
+                                            android.R.layout.simple_spinner_item,
+                                            opciones_f);
+                                    respuesta_especial_sp.setAdapter(adapter);
+                                    selected_item = respuesta_especial_sp.getSelectedItem().toString();
+                                    lst_spinner.remove(pos-2);
+                                    lst_adapter.remove(pos-2);
+                                    lst_spinner.add(pos-2,respuesta_especial_sp);
+                                    lst_adapter.add(pos-2,adapter);
+                                    Log.e("SITU SELECTED: ", "pos: " + respuesta_especial_sp.getSelectedItemPosition());
+                                }
+                                else{
+
+                                    respuesta_especial.setTag(get.getId() + "|" + get.getTipo());
+                                 //   respuesta_especial.setText("No procede");
                                     respuesta_especial.setText("No indica");
                                     respuesta_especial.setVisibility(View.VISIBLE);
-                                    pregunta_especial.setVisibility(View.VISIBLE);
                                 }
-
+                                pregunta_especial.setVisibility(View.VISIBLE);
                             }
                             else{
                                 Log.e("SITU, ","WEEEA ENTRO");
@@ -737,7 +767,7 @@ public class Formulario_verif extends AppCompatActivity {
 
     //*****ENVIAR PARA Q SE DESERIALIZE EN EL PHP
     public void enviarFormulario() {
-        progressDialog = new ProgressDialog(Formulario_verif.this);
+        progressDialog = new ProgressDialog(Formulario_Positiva.this);
         progressDialog.setMessage("Enviando Verificación....");
         progressDialog.show();
 
@@ -814,7 +844,7 @@ public class Formulario_verif extends AppCompatActivity {
 
             progressDialog.dismiss();
 
-            dialog2 = new Dialog(Formulario_verif.this);
+            dialog2 = new Dialog(Formulario_Positiva.this);
             dialog2.requestWindowFeature(Window.FEATURE_NO_TITLE);
             dialog2.setContentView(R.layout.dialog_vacio);
             dialog2.show();
@@ -850,7 +880,7 @@ public class Formulario_verif extends AppCompatActivity {
         else
             fotofirma = "";
 
-        crearBD = new DBHelper(Formulario_verif.this);
+        crearBD = new DBHelper(Formulario_Positiva.this);
         db = crearBD.getWritableDatabase();
         ContentValues values1 = new ContentValues();
         values1.put("id_fr", id_ver);
@@ -1007,7 +1037,7 @@ public class Formulario_verif extends AppCompatActivity {
     class Guardarfotos extends AsyncTask<String, String, String> {
         protected void onPreExecute() {
             super.onPreExecute();
-            pDialog2 = new ProgressDialog(Formulario_verif.this);
+            pDialog2 = new ProgressDialog(Formulario_Positiva.this);
             pDialog2.setMessage("Enviando fotos...");
             pDialog2.setIndeterminate(false);
             pDialog2.setCancelable(false);
@@ -1019,7 +1049,7 @@ public class Formulario_verif extends AppCompatActivity {
         protected String doInBackground(String... args) {
 
             //GUARDAR DATOS EN SQLITE
-            crearBD = new DBHelper(Formulario_verif.this);
+            crearBD = new DBHelper(Formulario_Positiva.this);
             db = crearBD.getWritableDatabase();
             ContentValues values1 = new ContentValues();
             values1 = new ContentValues();
@@ -1107,16 +1137,16 @@ public class Formulario_verif extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         //displayDate();
         if (resultCode == Activity.RESULT_OK
-                && resultCode != Formulario_verif.this.RESULT_CANCELED) {
+                && resultCode != Formulario_Positiva.this.RESULT_CANCELED) {
             if (requestCode == REQUEST_TAKE_PHOTO) {
                 new OperacionesFoto().execute();
             } else {
-                Toast.makeText(Formulario_verif.this,
+                Toast.makeText(Formulario_Positiva.this,
                         "Error con la foto, toma una de nuevo",
                         Toast.LENGTH_SHORT).show();
             }
         } else {
-            Toast.makeText(Formulario_verif.this, "No se ha realizado la foto",
+            Toast.makeText(Formulario_Positiva.this, "No se ha realizado la foto",
                     Toast.LENGTH_SHORT).show();
         }
     }
@@ -1130,7 +1160,7 @@ public class Formulario_verif extends AppCompatActivity {
 
         protected void onPreExecute() {
             super.onPreExecute();
-            DialogFoto = new ProgressDialog(Formulario_verif.this);
+            DialogFoto = new ProgressDialog(Formulario_Positiva.this);
             DialogFoto
                     .setProgressStyle(android.R.style.Widget_ProgressBar_Small);
             DialogFoto.setMessage("Comprimiendo foto. Espere por favor...");
@@ -1192,7 +1222,7 @@ public class Formulario_verif extends AppCompatActivity {
                     // Picasso.with(getApplicationContext()).load(uri).resize(400,300).centerCrop().into(ib);
                 } else {
                     Toast.makeText(
-                            Formulario_verif.this,
+                            Formulario_Positiva.this,
                             "Ocurrió un error al tomar la foto,tome una foto nueva",
                             Toast.LENGTH_SHORT).show();
                     file.delete();
