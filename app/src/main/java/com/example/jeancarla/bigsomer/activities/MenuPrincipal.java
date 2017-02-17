@@ -82,7 +82,7 @@ public class MenuPrincipal extends AppCompatActivity
     DBHelper crearBD;
     String id_ver, id_user;
 
-    Button lst_tareas, sincronizar, historial, fotos_faltantes;
+    Button lst_tareas, sincronizar, historial, fotos_faltantes, solicitudes;
 
     List<String> datosusuario;
     Funciones fu = new Funciones();
@@ -100,8 +100,11 @@ public class MenuPrincipal extends AppCompatActivity
         sincronizar = (Button) findViewById(R.id.sincronizar);
         historial = (Button) findViewById(R.id.historial);
         fotos_faltantes = (Button) findViewById(R.id.fotos);
+        solicitudes = (Button) findViewById(R.id.solicitudes);
 
         historial.setVisibility(View.GONE);
+        solicitudes.setVisibility(View.GONE);
+
         setSupportActionBar(toolbar);
 
         datosusuario = fu.DomsinFoto(MenuPrincipal.this, null);
@@ -256,6 +259,7 @@ public class MenuPrincipal extends AppCompatActivity
     private void pedirTareas(String usua) {
 
         // Añadir parámetro a la URL del web service
+        fu.delete_all(getApplicationContext());
         String newURL = VariablesURL.GET_TAREA + usua;
         progressDialog = new ProgressDialog(MenuPrincipal.this);
         progressDialog.setMessage("Descargando Tareas....");
@@ -299,11 +303,10 @@ public class MenuPrincipal extends AppCompatActivity
             crearBD = new DBHelper(MenuPrincipal.this);
             db = crearBD.getWritableDatabase();
             ContentValues values1 = new ContentValues();
-            System.out.println("SOMETHING ==============" + response.toString());
+            System.out.println("TAREAS ==============" + response.toString());
             String estado = response.getString("correcto");
 
             if (estado.equals("1")) {
-
                 JSONArray mensaje = response.getJSONArray("verificaciones");
                 Tarea[] tarea = gson.fromJson(mensaje.toString(), Tarea[].class);
 
@@ -324,11 +327,10 @@ public class MenuPrincipal extends AppCompatActivity
                     values1.put("ub_latitud", tarea[i].getUbLatitud());
                     values1.put("ub_longitud", tarea[i].getUbLongitud());
                     values1.put("medidor", tarea[i].getMedidor());
-
+                    values1.put("vip", tarea[i].getVip());
 
                     Log.i("valor a base", values1.toString());
                     db.insert("tarea", null, values1);
-
 
                 }
                 Toast.makeText(getApplicationContext(), "Tareas descargadas exitosamente...", Toast.LENGTH_LONG).show();

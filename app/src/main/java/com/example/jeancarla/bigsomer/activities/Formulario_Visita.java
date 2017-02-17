@@ -440,6 +440,5 @@ public class Formulario_Visita extends AppCompatActivity {
             e.printStackTrace();
         }
     }
-
 }
 

@@ -8,13 +8,14 @@
     card_view:cardBackgroundColor="@color/colorFondo"
     android:foreground="?selectableItemBackground"
     card_view:cardElevation="6dp"
-    card_view:cardUseCompatPadding="true">
+    card_view:cardUseCompatPadding="true"
+    >
+
 
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:padding="@dimen/dialog_body"  >
-
 
     <ImageView
         android:layout_width="80dp"
@@ -23,6 +24,15 @@
         android:src="@drawable/ic_ind"
         android:layout_marginRight="5dp"
         android:paddingBottom="5dp"/>
+
+    <ImageView
+        android:layout_width="100dp"
+        android:layout_height="80dp"
+        android:id="@+id/iv_vip"
+        android:src="@drawable/vip"
+        android:layout_marginRight="5dp"
+        android:paddingBottom="5dp"
+        android:scaleType="fitXY"/>
 
     <TextView
         android:layout_width="wrap_content"

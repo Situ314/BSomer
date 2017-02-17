@@ -19,12 +19,31 @@
         android:paddingRight="20dp"
         android:paddingStart="20dp"
         android:paddingLeft="20dp"
-        android:text="  LISTA DE TAREAS"
+        android:text=" REALIZAR VERIFICACIONES"
         android:id="@+id/lista_tareas"
         android:drawableLeft="@drawable/ic_assignment_white_24dp"
         android:background="@drawable/rectangulo_login"
         android:layout_centerHorizontal="true"
         android:textColor="@android:color/white" />
+
+    <Button
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:text="REALIZAR SOLICITUD"
+        android:paddingEnd="20dp"
+        android:paddingRight="20dp"
+        android:paddingStart="20dp"
+        android:paddingLeft="20dp"
+        android:layout_marginTop="15dp"
+        android:id="@+id/solicitudes"
+        android:layout_below="@+id/lista_tareas"
+        android:drawableLeft="@drawable/ic_assignment_turned_in_white_24dp"
+        android:background="@drawable/rectangulo_login"
+        android:textColor="@android:color/white"
+        android:layout_alignRight="@+id/lista_tareas"
+        android:layout_alignEnd="@+id/lista_tareas"
+        android:layout_alignLeft="@+id/lista_tareas"
+        android:layout_alignStart="@+id/lista_tareas" />
 
     <Button
         android:layout_width="300dp"
@@ -36,7 +55,7 @@
         android:paddingLeft="20dp"
         android:layout_marginTop="15dp"
         android:id="@+id/sincronizar"
-        android:layout_below="@+id/lista_tareas"
+        android:layout_below="@+id/solicitudes"
         android:drawableLeft="@drawable/ic_sync_white_24dp"
         android:background="@drawable/rectangulo_login"
         android:textColor="@android:color/white"

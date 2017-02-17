@@ -142,6 +142,10 @@ public class Formulario_Positiva extends AppCompatActivity {
     LinearLayout.LayoutParams paramet = new LinearLayout.LayoutParams(
             LinearLayoutCompat.LayoutParams.MATCH_PARENT,
             LinearLayoutCompat.LayoutParams.MATCH_PARENT, 0.7f);
+    LinearLayout.LayoutParams paramsp = new LinearLayout.LayoutParams(
+            LinearLayoutCompat.LayoutParams.MATCH_PARENT,
+            LinearLayoutCompat.LayoutParams.MATCH_PARENT);
+
 
     public static final int SIGNATURE_ACTIVITY = 1;
 
@@ -160,12 +164,14 @@ public class Formulario_Positiva extends AppCompatActivity {
         tv_cargo = (TextView) findViewById(R.id.cargo_static);
         et_cargo = (EditText) findViewById(R.id.v_cargo);
 
-        if (tipo_ver.equals("1")) {
+        if (tipo_ver.equals("1") || acceso_cliente.equals("21")) {
             parent.removeView(tv_cargo);
             parent.removeView(et_cargo);
             //tv_cargo.setVisibility(View.GONE);
            // et_cargo.setVisibility(View.GONE);
         }
+
+        paramsp.setMargins(0,0,0,20);
         //******************LOCATION THINGS
 
         iv_location = (ImageView) findViewById(R.id.iv_location);
@@ -513,6 +519,7 @@ public class Formulario_Positiva extends AppCompatActivity {
                         lst_adapter.add(adapter);
                         lst_spinner.add(respuestas);
                         Log.e("SITU SELECTED: ", "pos: " + respuestas.getSelectedItemPosition());
+                        respuestas.setLayoutParams(paramsp);
                         parent.addView(respuestas);
                         break;
 
@@ -638,25 +645,32 @@ public class Formulario_Positiva extends AppCompatActivity {
             View v = parent.getChildAt(q);
             //Log.e("SITU ERROR OBJ: ", lst_spinner.toString());
             //Log.e("SITU ERROR ADP: ", lst_adapter.toString());
+
             Log.e("SITU ERROR CHILDS: ", parent.getChildCount()+"");
             Log.e("SITU ERROR VIEW nro: ", ""+q);
             Log.e("SITU ERROR VIEW: ", v.toString());
             System.out.println("MEL:"+ Arrays.toString(lst_adapter.toArray()));
+
              if (v instanceof Spinner) {
+
                 int check = 0;
                 Spinner res = (Spinner) v;
                 Log.e("SITU ERROR CONTAR: ", (q - 4)+"");
-                if(tipo_ver.equals("1"))
-                    api = lst_adapter.get(q - 4);
-                else
-                    api = lst_adapter.get(q - 6);
+                if(tipo_ver.equals("1")||acceso_cliente.equals("21")){
+                    Log.e("SITU API: ", lst_adapter.get(q - 4).toString());
+                    api = lst_adapter.get(q - 4);}
+                else{
+                    Log.e("SITU API: ", lst_adapter.get(q - 6).toString());
+                    api = lst_adapter.get(q - 6);}
 // Log.e("SITU", ap.getItem(1).getValor().toString());
                 //res.setAdapter(ap);
 
                 for (int i = 0; i < api.getCount(); i++) {
+                    Log.e("SITU API: ", api.getCount() +"");
                     if (!api.getItem(i).getDependientes().equals("0")) {
                         check = 1;
                     }
+                    Log.e("SITU CHECK: ",check+"");
                 }
 
                 if (check == 1) {
@@ -668,11 +682,25 @@ public class Formulario_Positiva extends AppCompatActivity {
 
                     final List<Opcion> lst_opciones = new ArrayList<>();
                     parent.addView(pregunta_especial, pos + 1);
-                    lst_spinner.add(q-3,null);
-                    lst_adapter.add(q-3,null);
+                    if(tipo_ver.equals("1")||acceso_cliente.equals("21"))
+                    {
+                        lst_spinner.add(q-3,null);
+                        lst_adapter.add(q-3,null);
+                    }
+                    else{
+                        lst_spinner.add(q-5,null);
+                        lst_adapter.add(q-5,null);
+                    }
                     parent.addView(respuesta_especial, pos + 2);
-                    lst_spinner.add(q-2,null);
-                    lst_adapter.add(q-2,null);
+                    if(tipo_ver.equals("1")||acceso_cliente.equals("21"))
+                    {
+                        lst_spinner.add(q-2,null);
+                        lst_adapter.add(q-2,null);
+                    }
+                    else{
+                        lst_spinner.add(q-4,null);
+                        lst_adapter.add(q-4,null);
+                    }
                     respuesta_especial.setText("No procede");
                     respuesta_especial.setTag(0 + "|" + 0);
                     respuesta_especial.setVisibility(View.GONE);
@@ -697,7 +725,8 @@ public class Formulario_Positiva extends AppCompatActivity {
                                 String tipo_v = get.getTipo();
 
                                 if(tipo_v.equals("1")) {
-                                    parent.removeView(respuesta_especial);
+                                    Log.e("SITU: ", "ENTRO LA PUTAAAAA");
+                                    parent.removeView(parent.getChildAt(pos+2));
                                     parent.addView(respuesta_especial_sp, pos+2);
                                     String[] opciones = get.getOpciones().split("-");
                                     String[] idopciones = get.getIdopciones().split("-");
@@ -718,14 +747,28 @@ public class Formulario_Positiva extends AppCompatActivity {
                                             opciones_f);
                                     respuesta_especial_sp.setAdapter(adapter);
                                     selected_item = respuesta_especial_sp.getSelectedItem().toString();
-                                    lst_spinner.remove(pos-2);
-                                    lst_adapter.remove(pos-2);
-                                    lst_spinner.add(pos-2,respuesta_especial_sp);
-                                    lst_adapter.add(pos-2,adapter);
+                                    if(tipo_ver.equals("1")||acceso_cliente.equals("21"))
+                                    {
+
+                                            lst_spinner.remove(pos - 2);
+                                            lst_adapter.remove(pos - 2);
+                                            lst_spinner.add(pos - 2, respuesta_especial_sp);
+                                            lst_adapter.add(pos - 2, adapter);
+
+                                    }
+                                    else{
+
+                                            lst_spinner.remove(pos - 4);
+                                            lst_adapter.remove(pos - 4);
+                                            lst_spinner.add(pos - 4, respuesta_especial_sp);
+                                            lst_adapter.add(pos - 4, adapter);
+
+                                    }
+                                    respuesta_especial_sp.setVisibility(View.VISIBLE);
                                     Log.e("SITU SELECTED: ", "pos: " + respuesta_especial_sp.getSelectedItemPosition());
                                 }
                                 else{
-
+                                    Log.e("SITU: ", "ENTRO LA PUTAAAAA WEAAA");
                                     respuesta_especial.setTag(get.getId() + "|" + get.getTipo());
                                  //   respuesta_especial.setText("No procede");
                                     respuesta_especial.setText("No indica");
@@ -735,8 +778,33 @@ public class Formulario_Positiva extends AppCompatActivity {
                             }
                             else{
                                 Log.e("SITU, ","WEEEA ENTRO");
+                              /*  View delete_view_pregunta = parent.getChildAt(pos+1);
+                                View delete_view_respuesta = parent.getChildAt(pos+2);
+                                parent.removeView(delete_view_pregunta);
+                                parent.removeView(delete_view_respuesta);*/
+                                Opcion[] vacio = new Opcion[]{null,null,null,null,null,null,null,null};
+                                SpinAdapter adapter_vacio = new SpinAdapter(Formulario_Positiva.this,
+                                        android.R.layout.simple_spinner_item,
+                                        vacio);
+                                 if(tipo_ver.equals("1")||acceso_cliente.equals("21")){
+
+                                    lst_adapter.remove(pos - 2);
+                                     lst_adapter.add(pos-2, adapter_vacio);
+
+                                       // parent.removeView();
+                                        //lst_spinner.add(pos - 2, null);
+                                        //lst_adapter.add(pos - 2, null);
+                                }
+                                else{
+
+                                   lst_adapter.remove(pos - 4);
+                                     lst_adapter.add(pos-4, adapter_vacio);
+                                     //lst_spinner.add(pos - 4, null);
+                                       // lst_adapter.add(pos - 4, null);
+                               }
                                 respuesta_especial.setText("No procede");
                                 respuesta_especial.setVisibility(View.GONE);
+                                respuesta_especial_sp.setVisibility(View.GONE);
                                 pregunta_especial.setVisibility(View.GONE);
                             }
                             //final_value = ap.getItem(position).getID();
@@ -771,6 +839,7 @@ public class Formulario_Positiva extends AppCompatActivity {
         progressDialog.setMessage("Enviando Verificación....");
         progressDialog.show();
 
+        Log.e("MEL:", Arrays.toString(lst_adapter.toArray()));
 
         vacio = 0;
         int childs = parent.getChildCount();
@@ -809,7 +878,7 @@ public class Formulario_Positiva extends AppCompatActivity {
                 }
             } else if (v instanceof Spinner) {
                 //Spinner sp=lst_spinner.get(i-6);
-                if(tipo_ver.equals("1"))
+                if(tipo_ver.equals("1")||acceso_cliente.equals("21"))
                     ap = lst_adapter.get(i - 4);
                 else
                     ap = lst_adapter.get(i - 6);
@@ -831,7 +900,11 @@ public class Formulario_Positiva extends AppCompatActivity {
                 });
               //  Log.e("SITU ERROR: ", i + " pos: " + sp.getSelectedItemPosition());
               //  Log.e("SITU ERROR: ", i + " item: " + ap.getItem(sp.getSelectedItemPosition()).getID());
-                final_value = ap.getItem(sp.getSelectedItemPosition()).getID();
+                if(ap.getItem(sp.getSelectedItemPosition()) != null){
+                    final_value = ap.getItem(sp.getSelectedItemPosition()).getID();
+                }else{
+                    final_value = "";
+                }
                 lst_respuestas.add(final_value);
             }
             Log.e("SITU ERROR VIEW: ", v.toString());

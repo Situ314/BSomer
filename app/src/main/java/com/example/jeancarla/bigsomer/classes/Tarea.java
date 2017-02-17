@@ -20,6 +20,7 @@ public class Tarea {
     private String ub_latitud;
     private String ub_longitud;
     private String medidor;
+    private String vip;
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
     public String getIdtipo() {
@@ -263,6 +264,19 @@ public class Tarea {
      */
     public void setMedidor(String medidor) {
         this.medidor = medidor;
+    }
+
+    public String getVip() {
+        return vip;
+    }
+
+    /**
+     *
+     * @param vip
+     * The medidor
+     */
+    public void setVip(String vip) {
+        this.vip = vip;
     }
 
     public Map<String, Object> getAdditionalProperties() {

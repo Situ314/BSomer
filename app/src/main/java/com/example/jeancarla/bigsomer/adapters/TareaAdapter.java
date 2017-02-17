@@ -73,20 +73,30 @@ Contexto donde actua el recycler view
         viewHolder.zona.setText(items.get(i).getZona());
         viewHolder.direccion.setText("                    " + items.get(i).getDireccion());
 
+        if(!items.get(i).getVip().equals("2"))
+            viewHolder.iv_vip.setVisibility(View.GONE);
 
-        switch (items.get(i).getTipoVerificacion()) {
+        switch (items.get(i).getIdtipo()) {
 
-            case ("domiciliaria"):
+            case ("1"):
                 viewHolder.iv.setImageResource(R.drawable.ic_dom);
                 break;
-            case ("laboral independiente"):
+            case ("5"):
                 viewHolder.iv.setImageResource(R.drawable.ic_ind);
                 break;
-            case ("laboral dependiente"):
+            case ("4"):
                 viewHolder.iv.setImageResource(R.drawable.ic_dep);
                 break;
+            case ("10"):
+                viewHolder.iv.setImageResource(R.drawable.ic_vscompra);
+                break;
+            case ("11"):
+                viewHolder.iv.setImageResource(R.drawable.ic_vscons);
+                break;
+            case ("12"):
+                viewHolder.iv.setImageResource(R.drawable.ic_vsref);
+                break;
         }
-
     }
 
     /**
@@ -216,6 +226,7 @@ Contexto donde actua el recycler view
         public ItemLongClickListener listenerl;
 
         public ImageView iv;
+        public ImageView iv_vip;
 
         public TareaViewHolder(View v, ItemClickListener listener, ItemLongClickListener longlistener) {
             super(v);
@@ -224,6 +235,7 @@ Contexto donde actua el recycler view
             zona = (TextView) v.findViewById(R.id.zona);
             direccion = (TextView) v.findViewById(R.id.direccion);
             iv = (ImageView) v.findViewById(R.id.imageView2);
+            iv_vip = (ImageView) v.findViewById(R.id.iv_vip);
             this.listener = listener;
             this.listenerl = longlistener;
 

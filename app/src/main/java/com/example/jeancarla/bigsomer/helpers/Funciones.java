@@ -469,6 +469,7 @@ public class Funciones {
                 tarea[i].setUbLatitud(fila.getString(12));
                 tarea[i].setUbLongitud(fila.getString(13));
                 tarea[i].setMedidor(fila.getString(14));
+                tarea[i].setVip(fila.getString(15));
 
                 tareas.add(tarea[i]);
                 i++;
@@ -914,6 +915,14 @@ public class Funciones {
             return null;
         }
 
+    }
+
+    public void delete_all(Context context){
+        DBHelper admin = new DBHelper(context);
+        SQLiteDatabase bd = admin.getWritableDatabase();
+
+        bd.delete("tarea",null,null);
+        bd.close();
     }
 
     public List<String> get_tipo_cliente(Context context) {
