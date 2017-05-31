@@ -131,8 +131,10 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             }
         });
 
+        //Verifica si algún usuario ya ingresó en ese celular
         hay_usuario=fu.hay_usuarios(getApplicationContext());
 
+        //Si hay usuario pone el nombre de usuario en el cambpo usuario
         if(!hay_usuario.equals("nada")){
             datos = hay_usuario.split("-");
             mEmailView.setText(datos[0]);
@@ -159,6 +161,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             @Override
             public void onClick(View v) {
                 Log.d(TAG, "AQUI LE ENVIO LAS COSAS Y EL IMEI");
+                //(obtener IMEI del celular
                 TelephonyManager mngr = (TelephonyManager) getApplicationContext().getSystemService(getApplicationContext().TELEPHONY_SERVICE);
                 IMEI = mngr.getDeviceId();
                 System.out.println("IMEI: " + IMEI);
@@ -257,8 +260,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
      * errors are presented and no actual login attempt is made.
      */
     private void attemptLogin() {
-
-
         // Reset errors.
         mEmailView.setError(null);
         mPasswordView.setError(null);
@@ -268,7 +269,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         String password = mPasswordView.getText().toString();
         TelephonyManager mngr = (TelephonyManager) getApplicationContext().getSystemService(getApplicationContext().TELEPHONY_SERVICE);
         IMEI = mngr.getDeviceId();
-
 
         boolean cancel = false;
         View focusView = null;
@@ -321,8 +321,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             }else{
                 cargarDatos(email, password, IMEI);
             }
-            //mAuthTask = new UserLoginTask(email, password);
-            //mAuthTask.execute((Void) null);
         }
     }
 
@@ -415,7 +413,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         mEmailView.setAdapter(adapter);
     }
 
-
     private interface ProfileQuery {
         String[] PROJECTION = {
                 ContactsContract.CommonDataKinds.Email.ADDRESS,
@@ -431,7 +428,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
      * Obtiene los datos desde el servidor
      */
     public void cargarDatos(String user, String pass, String im) {
-        boolean verif;
         final String usuario = user;
         // Añadir parámetro a la URL del web service
         String newURL = VariablesURL.GET_LOGIN2 + user + "&password=" + pass + "&imei=" + im;
@@ -440,11 +436,14 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                     @Override
                     public void onResponse(String s) {
                         System.out.println("===============" + s + "==============");
+                        //Si nos da ENTRAR entonces está bien
                         if (s.equals("Entrar")) {
                             pedirDatos(usuario);
                             System.out.println("===============" + s + "==============");
                             verificar = true;
-                        } else if (s.equals("Incorrecto")) {
+                        } else
+                        //ERROR en usuario y contrseña
+                            if (s.equals("Incorrecto")) {
                             showProgress(false);
                             System.out.println("Usuario y Contraseña no coinciden, inténtelo de nuevo");
                             mPasswordView.setError(getString(R.string.error_incorrect_password));
@@ -455,7 +454,9 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                             System.out.println("No esta detectando la cuenta con ningun IMEI");
                             dialog.show();
                             verificar = false;
-                        } else if (s.equals("Otro Imei")) {
+                        } else
+                            //Esta vinculada a otra cuenta
+                            if (s.equals("Otro Imei")) {
                             showProgress(false);
                             dialog2.show();
                             System.out.println("Cuenta con otro IMEI");
@@ -474,12 +475,9 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                         Toast.makeText(getApplicationContext(), "Error al conectarse, por favor inténtelo de nuevo en un momento", Toast.LENGTH_LONG).show();
                     }
                 }));
-
-        verif = verificar;
-        // return verif;
-
     }
 
+    //Obtener los datos del usuario para guardarlo en la memoria del celular
     private void pedirDatos(String usua) {
 
         // Añadir parámetro a la URL del web service
@@ -508,7 +506,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                         }
                 )
         );
-
     }
 
     /**
@@ -524,6 +521,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         ContentValues values1 = new ContentValues();
         System.out.println("SOMETHING ==============" + response.toString());
 
+        //Guardar datos en la Base de Datos interna del celular
         Usuario usuario_guardar = gson.fromJson(response.toString(), Usuario.class);
 
         Log.i("DATOS===============> ", usuario_guardar.getId_usuario());
@@ -548,14 +546,10 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
     }
 
-
-    //COSAS DE LOS DIALOGOS
-
-
+    //Guardar los datos del usuario (IMEI y fecha de registro) en la base de datos
     public void guardarusuario() {
 
         // Obtener valores actuales de los controles
-
         String user = mEmailView.getText().toString();
         HashMap<String, String> map = new HashMap<>();// Mapeo previo
 
@@ -563,7 +557,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         map.put("fecha_actual", fecha_actual);
         map.put("IMEI", IMEI);
 
-        // Crear nuevo objeto Json basado en el mapa
+        // Crear nuevo objeto Json basado en el Mapa
         JSONObject jobject = new JSONObject(map);
 
         // Depurando objeto Json...

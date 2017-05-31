@@ -28,15 +28,14 @@ public class DBHelper extends SQLiteOpenHelper {
 
     public void onCreate(SQLiteDatabase db)
     {
-        db.execSQL("create table cbn_users(id_agent varchar primary key, usuario varchar,  password varchar)");
-        db.execSQL("create table cbn_ciudad(id varchar primary key, id_ciudad varchar, ciudad varchar)");
         db.execSQL("create table usuario_completo(id_usuario varchar primary key, nombre_usuario varchar, password varchar, nombres varchar,  apellido_1 varchar, apellido_2 varchar,ciudad varchar, ci varchar, telefono varchar)");
-        db.execSQL("create table tarea(id_ver varchar primary key,tipo_verificacion varchar,id_tipo varchar,solicitante varchar, nombre varchar, ci varchar,direccion varchar,zona varchar,ciudad varchar, nombre_empresa varchar,  cliente  varchar, referencias varchar,ub_latitud varchar,  ub_longitud varchar , medidor varchar, vip varchar)");
+        db.execSQL("create table tarea(id_ver varchar primary key,tipo_verificacion varchar,id_tipo varchar,solicitante varchar, nombre varchar, ci varchar,direccion varchar,zona varchar,ciudad varchar, nombre_empresa varchar,  cliente  varchar, referencias varchar,ub_latitud varchar,  ub_longitud varchar , medidor varchar, vip varchar, f_asignacion varchar)");
         db.execSQL("create table formulario(id varchar,acceso varchar,tipo_verificacion varchar,pregunta varchar,n_foto_positiva varchar, n_foto_negativa varchar, firma varchar, tipo varchar, opciones varchar, idopciones varchar, dependientes varchar, visible varchar)");
         db.execSQL("create table formulario_respuestas(id_fr varchar primary key,lat varchar,lon varchar,fecha_realizada varchar, tipo_ver varchar, acceso_cliente varchar, fotos varchar, firma varchar, respuestas varchar, estado varchar)");
         db.execSQL("create table formulario_negativas(id_fr varchar primary key,lat varchar,lon varchar,fecha_realizada varchar, tipo_ver varchar, acceso_cliente varchar, fotos varchar, nombre varchar,ci varchar,cargo varchar,comentarios varchar, estado varchar)");
         db.execSQL("create table cliente(id_cli varchar,cliente varchar,acceso varchar primary key)");
         db.execSQL("create table visita(id_sol varchar,lat varchar,lon varchar, comentarios varchar, fecha_realizada varchar, fecha_regreso varchar, estado varchar)");
+        db.execSQL("create table f_actualizada(fecha varchar)");
     }
 
     //Aquí se actualizará la base de datos

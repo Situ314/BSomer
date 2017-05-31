@@ -1,6 +1,7 @@
 package com.example.jeancarla.bigsomer.activities;
 
 import android.Manifest;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
@@ -15,11 +16,13 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.pdf.PdfDocument;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Environment;
 import android.os.StrictMode;
 import android.provider.MediaStore;
@@ -77,65 +80,69 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 public class Formulario_Positiva extends AppCompatActivity {
 
-    private int controlador;
-    private String tipo_final;
-    private String sfecha;
-    LinearLayout parent, layout_fotos;
-    private EditText txt_respuesta, txt_respuesta_date;
-    private Calendar myCalendar;
-    private DatePickerDialog.OnDateSetListener date;
-    private int n_fotos;
-    private String firma;
-    private int vacio;
-    DBHelper crearBD;
-    private ImageView iv_location;
-    private SQLiteDatabase db;
-//    ListMultimap<String, String> mapSpinner = ArrayListMultimap.create();
+    //Datos que recibiremos de actividad anterior
+    private String acceso_cliente, tipo_ver, id_ver;
 
-    private SpinAdapter adapter;
+    //VIEWS
+    private LinearLayout parent, layoutFotos, layoutDate;
+    private EditText etRespuesta, etRespuestaDate;
+    private ImageView ivLocation;
+    private ImageButton btnFoto, btnFirma;
+    private TextView txtPdfLat;
+    private TextView txtCargo;
+    private EditText etCargo;
+
+
+    //Variables para las fotos
+    private int nro_fotos;
+    private List<String> lstFotos;
+    private String direccion_foto;
+
+    //Variables para la firma
+    private String firma;
+    private String direccion_foto_firma;
+    public static final int SIGNATURE_ACTIVITY = 1;
+
+
+    //Base de Datos
+    DBHelper crearBD;
+    private SQLiteDatabase db;
+
     private Funciones fu = new Funciones();
+    
     // obtiene fecha actual
     private Calendar fechaYhora = Calendar.getInstance();
     SimpleDateFormat fecha = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     String fecha_actual;
 
-    private List<SpinAdapter> lst_adapter = new ArrayList<>();
-    private List<Opcion> lst_obj = new ArrayList<>();
-    private List<Spinner> lst_spinner = new ArrayList<>();
-    private String acceso_cliente, tipo_ver, id_ver;
-    boolean control_foto = false;
-    private HashMap<String, String> spinnerMap = new HashMap<String, String>();
-    private List<String> fotos;
+    //Para los Spinner
+    private List<SpinAdapter> lstAdapter = new ArrayList<>();
+    private List<Spinner> lstSpinner = new ArrayList<>();
+    private SpinAdapter spinAdapterParaEnviar, spinAdapterParaGenerar, spinAdapterPrincipal;
+    private String valor_final_spinner;
+
+    //Para localización
     private double lat = 0;
     private double lon = 0;
     public LocationManager locationManager;
     public LocationListener locationListener;
     public Location location;
 
-    private String pago_alquiler;
-    private Dialog dialog2;
-    private LinearLayout date_layout;
-    private String final_value, datee, selected_item;
-    private Opcion opcion_sel = new Opcion();
-    private String nombre_foto,fotofirma;
-    private ImageButton button_foto, button_firma;
-    static final int REQUEST_IMAGE_CAPTURE = 1;
-    private SpinAdapter ap, api;
+    private Dialog dialogNotificarVacio;
+    private int verificar_campos_vacio;
 
-    private TextView tv_cargo;
-    private EditText et_cargo;
+    //Parámetros para los LinearLayout
     LinearLayout.LayoutParams paramb = new LinearLayout.LayoutParams(
             LinearLayoutCompat.LayoutParams.MATCH_PARENT,
             LinearLayoutCompat.LayoutParams.MATCH_PARENT, 0.3f);
@@ -146,35 +153,34 @@ public class Formulario_Positiva extends AppCompatActivity {
             LinearLayoutCompat.LayoutParams.MATCH_PARENT,
             LinearLayoutCompat.LayoutParams.MATCH_PARENT);
 
-
-    public static final int SIGNATURE_ACTIVITY = 1;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_formulario_verif);
+        setContentView(R.layout.activity_formulario_positiva);
 
         acceso_cliente = getIntent().getStringExtra("cliente");
         tipo_ver = getIntent().getStringExtra("tipo");
         id_ver = getIntent().getStringExtra("id_ver");
 
+        txtPdfLat = (TextView) findViewById (R.id.txt_lat_lon);
         parent = (LinearLayout) findViewById(R.id.parent);
-        fotos = new ArrayList<>();
 
-        tv_cargo = (TextView) findViewById(R.id.cargo_static);
-        et_cargo = (EditText) findViewById(R.id.v_cargo);
+        lstFotos = new ArrayList<>();
 
+        txtCargo = (TextView) findViewById(R.id.cargo_static);
+        etCargo = (EditText) findViewById(R.id.v_cargo);
+
+        //Comprobar si es Domiciliar o Vivienda Social
+        //Si es así eliminamos el campo "Cargo"
         if (tipo_ver.equals("1") || acceso_cliente.equals("21")) {
-            parent.removeView(tv_cargo);
-            parent.removeView(et_cargo);
-            //tv_cargo.setVisibility(View.GONE);
-           // et_cargo.setVisibility(View.GONE);
+            parent.removeView(txtCargo);
+            parent.removeView(etCargo);
         }
 
         paramsp.setMargins(0,0,0,20);
         //******************LOCATION THINGS
 
-        iv_location = (ImageView) findViewById(R.id.iv_location);
+        ivLocation = (ImageView) findViewById(R.id.iv_location);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         location = locationManager
                 .getLastKnownLocation(LocationManager.GPS_PROVIDER);
@@ -183,9 +189,10 @@ public class Formulario_Positiva extends AppCompatActivity {
             public void onLocationChanged(Location location) {
                 lat = location.getLatitude();
                 lon = location.getLongitude();
-
-                iv_location.setImageResource(R.drawable.ic_location_on_black_24dp);
-                //estado1.setImageResource(R.drawable.check);
+                //Cambia el texto con las cordenadas agarradas
+                txtPdfLat.setText("LAT: "+lat+" / LON: "+lon);
+                //Cambia la imagen para indicar que existen cordenadas
+                ivLocation.setImageResource(R.drawable.ic_location_on_black_24dp);
                 if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     // TODO: Consider calling
                     //    ActivityCompat#requestPermissions
@@ -223,27 +230,29 @@ public class Formulario_Positiva extends AppCompatActivity {
         //LOCATION*************************************
 
         //***********FOOOOOTOS
+        //Crea la dirección en la que serán guardadas y su nombre
         File sdCard = Environment.getExternalStorageDirectory();
         File directory = new File(sdCard.getAbsolutePath()
                 + "/Bigsomer_aver");
         if (!directory.isDirectory())
             directory.mkdirs();
-
-        nombre_foto = Environment.getExternalStorageDirectory() + "/Bigsomer_aver/" + id_ver + ".jpg";
+        direccion_foto = Environment.getExternalStorageDirectory() + "/Bigsomer_aver/" + id_ver + ".jpg";
         //FOTOS**************
-        txt_respuesta_date = (EditText) getLayoutInflater().inflate(R.layout.edittext_verif, null);
+
+        etRespuestaDate = (EditText) getLayoutInflater().inflate(R.layout.edittext_verif, null);
+        //Obtiene la fecha actual
         fecha_actual = fecha.format(fechaYhora.getTime());
         System.out.println(fecha_actual);
-        datee = fecha_actual.toString();
-        txt_respuesta_date.setText("No indica");
+        etRespuestaDate.setText("No indica");
 
-       // Toast.makeText(getApplicationContext(), acceso_cliente + " " + tipo_ver, Toast.LENGTH_LONG).show();
-
+        //Abrir Base de Datos
         DBHelper admin = new DBHelper(getApplicationContext());
         SQLiteDatabase bd = admin.getWritableDatabase();
 
+        //OBTENER EL FORMULARIO(PREGUNTAS, TIPOS DE PREGUNTAS,OPCIONES) DEL CLIENTE Y TIPO DE VERIF. CORRESPONDIENTE
+        //Agarra un cursor y lo guarda en una lista de "Formnularios"
         int i = 0;
-        List<Formulario> preguntas = new ArrayList<Formulario>();
+        List<Formulario> lstPreguntas = new ArrayList<Formulario>();
         Formulario[] formulario = new Formulario[100];
         String[] user = new String[]{acceso_cliente, tipo_ver};
         Cursor fila = bd.rawQuery("SELECT * FROM formulario WHERE acceso=? AND tipo_verificacion=?", user);
@@ -263,7 +272,7 @@ public class Formulario_Positiva extends AppCompatActivity {
                 formulario[i].setDependientes(fila.getString(10));
                 formulario[i].setVisible(fila.getString(11));
 
-                preguntas.add(formulario[i]);
+                lstPreguntas.add(formulario[i]);
                 i++;
             } while (fila.moveToNext());
 
@@ -273,32 +282,13 @@ public class Formulario_Positiva extends AppCompatActivity {
             bd.close();
         }
 
-        date_layout = new LinearLayout(getApplicationContext());
-        date_layout.setOrientation(LinearLayout.HORIZONTAL);
-        myCalendar = Calendar.getInstance();
-        Date date1 = new Date();
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy/MM/dd");
-        sfecha = sdf.format(date1);
-        date = new DatePickerDialog.OnDateSetListener() {
+        layoutDate = new LinearLayout(getApplicationContext());
+        layoutDate.setOrientation(LinearLayout.HORIZONTAL);
 
-            @Override
-            public void onDateSet(DatePicker view, int year, int monthOfYear,
-                                  int dayOfMonth) {
-                // TODO Auto-generated method stub
-                myCalendar.set(Calendar.YEAR, year);
-                myCalendar.set(Calendar.MONTH, monthOfYear);
-                myCalendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
-                //txt_respuesta_date.setText(new StringBuilder().append(dayOfMonth).append("/").append(monthOfYear+1).append("/").append(year));
-
-                updateLabel();
-            }
-
-        };
-        // Toast.makeText(getApplicationContext(),preguntas.get(0).getPregunta(),Toast.LENGTH_LONG).show();
-        // getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-    if(!preguntas.isEmpty())
-        generarFormulario(preguntas);
-
+    if(!lstPreguntas.isEmpty())
+        //Si es que no está vacía se genera el formulario
+        generarFormulario(lstPreguntas);
+        //Toolbar
         setToolbar();
     }
 
@@ -318,152 +308,143 @@ public class Formulario_Positiva extends AppCompatActivity {
         return true;
     }
 
-    private Dialog dialog;
+    private Dialog dialogEnviarVerificacion;
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
 
         int id = item.getItemId();
+        //Botón en el Menú para enviar la verificación
         if (id == R.id.action_enviar) {
 
-            dialog = new Dialog(Formulario_Positiva.this);
-            dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-            dialog.setContentView(R.layout.dialog_nuevo);
-            dialog.show();
+            dialogEnviarVerificacion = new Dialog(Formulario_Positiva.this);
+            dialogEnviarVerificacion.requestWindowFeature(Window.FEATURE_NO_TITLE);
+            dialogEnviarVerificacion.setContentView(R.layout.dialog_nuevo);
+            dialogEnviarVerificacion.show();
+            TextView txtDialogTitulo = (TextView) dialogEnviarVerificacion.findViewById(R.id.info_text);
+            TextView txtDialogInfo = (TextView) dialogEnviarVerificacion.findViewById(R.id.info_text2);
+            TextView txtDialogInfo2 = (TextView) dialogEnviarVerificacion.findViewById(R.id.info_text3);
+
+            Button btnDialogEnviar = (Button) dialogEnviarVerificacion.findViewById(R.id.enviar_boton);
+            Button btnDialogCancelar = (Button) dialogEnviarVerificacion.findViewById(R.id.cancelar_boton);
+
+            //Verificar si agarro Latitud y longitud
             if (lat != 0 && lon != 0) {
-                if (n_fotos == fotos.size()) {
-                    TextView titulo = (TextView) dialog.findViewById(R.id.info_text);
-                    titulo.setText("ENVIAR VERIFICACIÓN");
+                //Verifica si hay las lstFotos requeridas
+                if (nro_fotos == lstFotos.size()) {
+                    //Crear diálogo preguntando si el verificador está seguro de enviar la tarea
+                    txtDialogTitulo.setText("ENVIAR VERIFICACIÓN");
 
-                    TextView info = (TextView) dialog.findViewById(R.id.info_text2);
-                    info.setText("¿Está seguro de querer enviar el formulario? Si está seguro presione ENVIAR");
+                    txtDialogInfo.setText("¿Está seguro de querer enviar el formulario? Si está seguro presione ENVIAR");
 
-                    TextView info2 = (TextView) dialog.findViewById(R.id.info_text3);
-                    info2.setVisibility(View.GONE);
+                    txtDialogInfo2.setVisibility(View.GONE);
 
-                    Button b_enviar = (Button) dialog.findViewById(R.id.enviar_boton);
-                    b_enviar.setOnClickListener(new View.OnClickListener() {
+                    btnDialogEnviar.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
+                            //Procedemos a enviar Formulario
                             enviarFormulario();
-                            dialog.dismiss();
+                            dialogEnviarVerificacion.dismiss();
                         }
                     });
 
-                    Button b_cancelar = (Button) dialog.findViewById(R.id.cancelar_boton);
-                    b_cancelar.setOnClickListener(new View.OnClickListener() {
+                    btnDialogCancelar.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
-                            dialog.dismiss();
+                            dialogEnviarVerificacion.dismiss();
                         }
                     });
 
                     return true;
                 } else {
-                    TextView titulo = (TextView) dialog.findViewById(R.id.info_text);
-                    titulo.setText("NO SE ENCONTRARON LAS FOTOS REQUERIDAS");
+                    //Crea diálogo indicando que no se cuenta con las lstFotos requeridas
+                    txtDialogTitulo.setText("NO SE ENCONTRARON LAS FOTOS REQUERIDAS");
 
-                    TextView info = (TextView) dialog.findViewById(R.id.info_text2);
-                    info.setText("La presente verificación necesita de " + n_fotos + " fotografías para poder ser enviada. Asegúrese de haber sacado todas las fotos o de tener espacio suficiente en la memoria del celular");
+                    txtDialogInfo.setText("La presente verificación necesita de " + nro_fotos + " fotografías para poder ser enviada. Asegúrese de haber sacado todas las Fotos o de tener espacio suficiente en la memoria del celular");
 
-                    TextView info2 = (TextView) dialog.findViewById(R.id.info_text3);
-                    info2.setVisibility(View.GONE);
+                    txtDialogInfo2.setVisibility(View.GONE);
 
-                    Button b_enviar = (Button) dialog.findViewById(R.id.enviar_boton);
-                    b_enviar.setVisibility(View.GONE);
+                    btnDialogEnviar.setVisibility(View.GONE);
 
-                    Button b_cancelar = (Button) dialog.findViewById(R.id.cancelar_boton);
-                    b_cancelar.setText("OK");
-                    b_cancelar.setOnClickListener(new View.OnClickListener() {
+                    btnDialogCancelar.setText("OK");
+                    btnDialogCancelar.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
-                            dialog.dismiss();
+                            dialogEnviarVerificacion.dismiss();
                         }
                     });
 
                     return true;
                 }
             } else {
-                TextView titulo = (TextView) dialog.findViewById(R.id.info_text);
-                titulo.setText("NO SE ENCONTRARON COORDENADAS");
+                //Crea diálogo indicando que no se cuenta con las coordenadas
+                txtDialogTitulo.setText("NO SE ENCONTRARON COORDENADAS");
 
-                TextView info = (TextView) dialog.findViewById(R.id.info_text2);
-                info.setText("No se obtuvieron coordenadas geográficas. Asegúrese de estar al aire libre y vuelva a intentarlo");
+                txtDialogInfo.setText("No se obtuvieron coordenadas geográficas. Asegúrese de estar al aire libre y vuelva a intentarlo");
 
-                TextView info2 = (TextView) dialog.findViewById(R.id.info_text3);
-                info2.setVisibility(View.GONE);
+                txtDialogInfo2.setVisibility(View.GONE);
 
-                Button b_enviar = (Button) dialog.findViewById(R.id.enviar_boton);
-                b_enviar.setVisibility(View.GONE);
+                btnDialogEnviar.setVisibility(View.GONE);
 
-                Button b_cancelar = (Button) dialog.findViewById(R.id.cancelar_boton);
-                b_cancelar.setText("OK");
-                b_cancelar.setOnClickListener(new View.OnClickListener() {
+                btnDialogCancelar.setText("OK");
+                btnDialogCancelar.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        dialog.dismiss();
+                        dialogEnviarVerificacion.dismiss();
                     }
                 });
 
                 return true;
             }
 
-        } else {
-            dialog = new Dialog(Formulario_Positiva.this);
-            dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-            dialog.setContentView(R.layout.dialog_two);
-            dialog.show();
+        }
+        //Botón para volver atrás
+        else {
+            dialogEnviarVerificacion = new Dialog(Formulario_Positiva.this);
+            dialogEnviarVerificacion.requestWindowFeature(Window.FEATURE_NO_TITLE);
+            dialogEnviarVerificacion.setContentView(R.layout.dialog_two);
+            dialogEnviarVerificacion.show();
 
-            Button b_enviar = (Button) dialog.findViewById(R.id.si_boton);
-            b_enviar.setOnClickListener(new View.OnClickListener() {
+            Button btnDialogSi = (Button) dialogEnviarVerificacion.findViewById(R.id.si_boton);
+            btnDialogSi.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     finish();
                 }
             });
 
-            Button b_cancelar = (Button) dialog.findViewById(R.id.no_boton);
-            b_cancelar.setOnClickListener(new View.OnClickListener() {
+            Button btnDialogNo = (Button) dialogEnviarVerificacion.findViewById(R.id.no_boton);
+            btnDialogNo.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    dialog.dismiss();
+                    dialogEnviarVerificacion.dismiss();
                 }
             });
         }
         return super.onOptionsItemSelected(item);
     }
 
-    private void updateLabel() {
-
-        String myFormat = "yyyy/MM/dd"; //In which you need put here
-        SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.US);
-
-        sfecha = sdf.format(myCalendar.getTime());
-        Log.e("HORAAAA", sdf.format(myCalendar.getTime()));
-        displayDate();
-    }
-
     /*evento para el boton BACK*/
     @Override
     public void onBackPressed() {
-        dialog = new Dialog(Formulario_Positiva.this);
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        dialog.setContentView(R.layout.dialog_two);
-        dialog.show();
+        dialogEnviarVerificacion = new Dialog(Formulario_Positiva.this);
+        dialogEnviarVerificacion.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialogEnviarVerificacion.setContentView(R.layout.dialog_two);
+        dialogEnviarVerificacion.show();
 
-        Button b_enviar = (Button) dialog.findViewById(R.id.si_boton);
-        b_enviar.setOnClickListener(new View.OnClickListener() {
+        Button btnDialogSi = (Button) dialogEnviarVerificacion.findViewById(R.id.si_boton);
+        btnDialogSi.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 finish();
             }
         });
 
-        Button b_cancelar = (Button) dialog.findViewById(R.id.no_boton);
-        b_cancelar.setOnClickListener(new View.OnClickListener() {
+        Button btnDialogNo = (Button) dialogEnviarVerificacion.findViewById(R.id.no_boton);
+        btnDialogNo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                dialog.dismiss();
+                dialogEnviarVerificacion.dismiss();
             }
         });
     }
@@ -472,84 +453,139 @@ public class Formulario_Positiva extends AppCompatActivity {
      * BACK
      ********************************/
 
-    private int mYear, mMonth, mDay, mHour, mMinute;
+    //Datos para seleccionar fecha si es que se necesita
+    private int mYear, mMonth, mDay;
 
-    //**genera el formulario de acuerdo a la BD
-    public void generarFormulario(final List<Formulario> datos_verificacion) {
+    //**GENERA EL FORMULARIO CON EL "FORMULARIO" QUE AGARRAMOS DE LA BD
+    public void generarFormulario(final List<Formulario> lstPreguntas) {
 
-        for (int i = 0; i < datos_verificacion.size(); i++) {
-
-            if (datos_verificacion.get(i).getVisible().equals("1")) {
-
-                String pregunta = datos_verificacion.get(i).getPregunta();
-                TextView tv_pregunta = new TextView(getApplicationContext());
-                tv_pregunta.setText(pregunta);
-                tv_pregunta.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.colorPrimaryDark));
-                tv_pregunta.setTextSize(20);
-                tv_pregunta.setTypeface(null, Typeface.BOLD);
-                parent.addView(tv_pregunta);
-                lst_spinner.add(null);
-                lst_adapter.add(null);
-                String tipo = datos_verificacion.get(i).getTipo();
-                txt_respuesta = (EditText) getLayoutInflater().inflate(R.layout.edittext_verif, null);
-
-                txt_respuesta_date.setInputType(InputType.TYPE_CLASS_DATETIME);
+        //Agregamos un NULL en la lista de Spinners y Adapters
+        //Porque luego necesitaremos estos datos para recolectar los datos
+        //Al principio agregamos un Null porque el primero es el TextView de las cordenadas
+        //Cuando el View NO SEA UN SPINEER agregamos NULL A ESTAS LISTAS
+        lstSpinner.add(null);
+        lstAdapter.add(null);
+        //Recorrer la lista de Formularios
+        for (int i = 0; i < lstPreguntas.size(); i++) {
+            //Verificamos si es Visible la pregunta
+            //Cuando no sea visible el estado sera "0"
+            //Eso pasa cuando esa rpegunta es habilitada con otra pregunta.
+            if (lstPreguntas.get(i).getVisible().equals("1")) {
+                //Obtener Pregunta
+                String pregunta = lstPreguntas.get(i).getPregunta();
+                //Crear un texView con la pregunta y darle su formato
+                TextView txtPregunta = new TextView(getApplicationContext());
+                txtPregunta.setText(pregunta);
+                txtPregunta.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.colorPrimaryDark));
+                txtPregunta.setTextSize(20);
+                txtPregunta.setTypeface(null, Typeface.BOLD);
+                //Agregamos el TextView al Layout Parent
+                parent.addView(txtPregunta);
+                //Como dije arriba agregamos un NULL a la lista de spinners y adapters porque este VIEW no es SPINENR
+                lstSpinner.add(null);
+                lstAdapter.add(null);
+                //Obtenemos el tipo de la respuesta
+                //(Pregunta abierta, Numeral, para introducir Fecha o Spinner)
+                String tipo = lstPreguntas.get(i).getTipo();
+                //Crea el EditText en caso de que sea abierta
+                etRespuesta = (EditText) getLayoutInflater().inflate(R.layout.edittext_verif, null);
+                //Crea el EditText en caso de que olo obtenga fechas
+                etRespuestaDate.setInputType(InputType.TYPE_CLASS_DATETIME);
+                //Depende de que TIPO es
                 switch (tipo) {
+                    //"1" es Spinner
                     case ("1"):
-                        final Spinner respuestas = (Spinner) getLayoutInflater().inflate(R.layout.spinner_verif, null);
-                        String[] opciones = datos_verificacion.get(i).getOpciones().split("-");
-                        String[] idopciones = datos_verificacion.get(i).getIdopciones().split("-");
-                        String[] dependientes = datos_verificacion.get(i).getDependientes().split("-");
+                        //Crea Spinner
+                        final Spinner spRespuestas = (Spinner) getLayoutInflater().inflate(R.layout.spinner_verif, null);
+                        //Crea un vector con las Opciones
+                        //Las opciones son devueltas de esta manera
+                        //Por ej: "si-no-tal vez"
+                        //Las separa por el guión y guarda todos esos datos
+                        String[] opciones_para_spinner = lstPreguntas.get(i).getOpciones().split("-");
+                        //Crea un vector con el ID de las Opciones
+                        //Similar a lo de arriba
+                        String[] idopciones_para_spinner = lstPreguntas.get(i).getIdopciones().split("-");
+                        //Crea un vector con las Dependeintes de esa Respuesta
+                        //en caso de que no tenga dependientes este valor es 0
+                        //si es que lo tiene, nos da el numero de la pregunta que es abierta con esta opción
+                        String[] dependientes_para_spinner = lstPreguntas.get(i).getDependientes().split("-");
 
-                        final List<Opcion> lst_opciones = new ArrayList<>();
-                        for (int j = 0; j < opciones.length; j++) {
-                            String value = datos_verificacion.get(i).getId().toString() + "|" + datos_verificacion.get(i).getTipo() + "|" + idopciones[j];
-                            Opcion op = new Opcion(value, opciones[j], dependientes[j]);
-                            Log.e("SITU ERROR: ", datos_verificacion.get(i).getId().toString() + "|" + datos_verificacion.get(i).getTipo() + "|" + idopciones[j]);
-                            lst_opciones.add(op);
+                        //Generamos una lista de "Opciones"
+                        final List<Opcion> lstOpciones = new ArrayList<>();
+                        for (int j = 0; j < opciones_para_spinner.length; j++) {
+                            //Crea un String con el ID|Tipo|Opción
+                            String value = lstPreguntas.get(i).getId().toString() + "|" + lstPreguntas.get(i).getTipo() + "|" + idopciones_para_spinner[j];
+                            //Crea un Objeto "Opción" con los mismos datos de arriba
+                            //Esto lo hacemos porque lo necestiamos para crear el Adapter
+                            Opcion op = new Opcion(value, opciones_para_spinner[j], dependientes_para_spinner[j]);
+                            Log.e("SITU ERROR: ", lstPreguntas.get(i).getId().toString() + "|" + lstPreguntas.get(i).getTipo() + "|" + idopciones_para_spinner[j]);
+                            //Adiciona este Objeto a la Lista
+                            lstOpciones.add(op);
                         }
 
-                        Opcion[] opciones_f = new Opcion[lst_opciones.size()];
-                        opciones_f = lst_opciones.toArray(opciones_f);
-                        adapter = new SpinAdapter(Formulario_Positiva.this,
+                        //Crea un Vector del tamaño de la Lista de "Opciones"
+                        Opcion[] vectorOpciones = new Opcion[lstOpciones.size()];
+                        //Cambia de Lista a Vector
+                        vectorOpciones = lstOpciones.toArray(vectorOpciones);
+                        //Crea el Adapter para el Spinner con el Objeto "Opciones"
+                        //Esto hará que se muestre la opción, pero por atrás tenemos el ID de esa opción y su tipo
+                        spinAdapterPrincipal = new SpinAdapter(Formulario_Positiva.this,
                                 android.R.layout.simple_spinner_item,
-                                opciones_f);
-                        respuestas.setAdapter(adapter);
-                        selected_item = respuestas.getSelectedItem().toString();
-                        lst_adapter.add(adapter);
-                        lst_spinner.add(respuestas);
-                        Log.e("SITU SELECTED: ", "pos: " + respuestas.getSelectedItemPosition());
-                        respuestas.setLayoutParams(paramsp);
-                        parent.addView(respuestas);
+                                vectorOpciones);
+                        spRespuestas.setAdapter(spinAdapterPrincipal);
+                        //Adicionamos el Spinneradapter y el Spinner a la lista de Adapters y Spinners
+                        lstAdapter.add(spinAdapterPrincipal);
+                        lstSpinner.add(spRespuestas);
+                        Log.e("SITU SELECTED: ", "pos: " + spRespuestas.getSelectedItemPosition());
+                        //agrega los parámetros hechos para el Spinner
+                        spRespuestas.setLayoutParams(paramsp);
+                        //Adicionar el Spinner al Layout Parent
+                        parent.addView(spRespuestas);
                         break;
 
+                //"3" es pregunta abierta
                     case ("3"):
-                        txt_respuesta.setTag(datos_verificacion.get(i).getId() + "|" + datos_verificacion.get(i).getTipo());
-                        parent.addView(txt_respuesta);
-                        lst_spinner.add(null);
-                        lst_adapter.add(null);
+                        //Creamos un TAG exclusivo para este TexView con su ID y TIPO
+                        //Esto nos sirve para enviar los datos posteriormente
+                        etRespuesta.setTag(lstPreguntas.get(i).getId() + "|" + lstPreguntas.get(i).getTipo());
+                        //Adcionar el textView al Layout Parent
+                        parent.addView(etRespuesta);
+                        //Como dije arriba agregamos un NULL a la lista de spinners y adapters porque este VIEW no es SPINENR
+                        lstSpinner.add(null);
+                        lstAdapter.add(null);
                         break;
-
+                //"4" es una pregunta abierta pero con opción solo de números
                     case ("4"):
-                        txt_respuesta.setTag(datos_verificacion.get(i).getId() + "|" + datos_verificacion.get(i).getTipo());
-                        txt_respuesta.setInputType(InputType.TYPE_CLASS_NUMBER);
-                        parent.addView(txt_respuesta);
-                        lst_spinner.add(null);
-                        lst_adapter.add(null);
+                        //Creamos un TAG exclusivo para este TexView con su ID y TIPO
+                        //Esto nos sirve para enviar los datos posteriormente
+                        etRespuesta.setTag(lstPreguntas.get(i).getId() + "|" + lstPreguntas.get(i).getTipo());
+                        etRespuesta.setInputType(InputType.TYPE_CLASS_NUMBER);
+                        //Adcionar el textView al Layout Parent
+                        parent.addView(etRespuesta);
+                        //Como dije arriba agregamos un NULL a la lista de spinners y adapters porque este VIEW no es SPINENR
+                        lstSpinner.add(null);
+                        lstAdapter.add(null);
                         break;
-
+                //"5" es opción de fecha
                     case ("5"):
-                        parent.addView(date_layout);
-                        txt_respuesta_date.setTag(datos_verificacion.get(i).getId() + "|" + datos_verificacion.get(i).getTipo());
-                        txt_respuesta_date.setFocusable(false);
-                        //txt_respuesta_date.setText("No indica");
-                        txt_respuesta_date.setLayoutParams(paramb);
-                        date_layout.addView(txt_respuesta_date);
-                        Button date_button = new Button(getApplicationContext());
-                        date_button.setText("ELEGIR");
-                        date_button.setBackgroundResource(R.drawable.rectangulo_login);
-                        date_button.setTextColor(Color.WHITE);
-                        date_button.setOnClickListener(new View.OnClickListener() {
+                        //Adicionamos el Layout para las fechas al Layout Parent
+                        parent.addView(layoutDate);
+                        //Creamos un TAG exclusivo para este TexView con su ID y TIPO
+                        //Esto nos sirve para enviar los datos posteriormente
+                        etRespuestaDate.setTag(lstPreguntas.get(i).getId() + "|" + lstPreguntas.get(i).getTipo());
+                        //Hacemos que no se pueda escribir en este TextView
+                        etRespuestaDate.setFocusable(false);
+                        //Agregamos los parámetros
+                        etRespuestaDate.setLayoutParams(paramb);
+                        //Adcionar el textView al Layout de la Fecha
+                        layoutDate.addView(etRespuestaDate);
+                        //Creamos un botón para abrir un diálogo que tiene un calendario
+                        //para elegir la fecha
+                        Button btnSeleccionarFecha = new Button(getApplicationContext());
+                        btnSeleccionarFecha.setText("ELEGIR");
+                        btnSeleccionarFecha.setBackgroundResource(R.drawable.rectangulo_login);
+                        btnSeleccionarFecha.setTextColor(Color.WHITE);
+                        btnSeleccionarFecha.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
                                 final Calendar c = Calendar.getInstance();
@@ -563,253 +599,270 @@ public class Formulario_Positiva extends AppCompatActivity {
                                             @Override
                                             public void onDateSet(DatePicker view, int year,
                                                                   int monthOfYear, int dayOfMonth) {
-                                                txt_respuesta_date.setText(year + "-" + (monthOfYear + 1) + "-" + dayOfMonth);
-                                                Log.e("SITU DATE: ", datee);
+                                                etRespuestaDate.setText(year + "-" + (monthOfYear + 1) + "-" + dayOfMonth);
                                             }
                                         }, mYear, mMonth, mDay);
                                 datePickerDialog.show();
                             }
                         });
-
-                        // parent.addView(txt_respuesta_date);
-                        date_button.setLayoutParams(paramet);
-                        date_layout.addView(date_button);
-                        lst_spinner.add(null);
-                        lst_adapter.add(null);
+                        btnSeleccionarFecha.setLayoutParams(paramet);
+                        //Adcionar el Botón al Layout de la Fecha
+                        layoutDate.addView(btnSeleccionarFecha);
+                        //Como dije arriba agregamos un NULL a la lista de spinners y adapters porque este VIEW no es SPINENR
+                        lstSpinner.add(null);
+                        lstAdapter.add(null);
                         break;
                 }
             }
         }
 
-        TextView tv_pregunta_com = new TextView(getApplicationContext());
-        tv_pregunta_com.setText("Comentarios");
-        tv_pregunta_com.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.colorPrimaryDark));
-        tv_pregunta_com.setTextSize(20);
-        tv_pregunta_com.setTypeface(null, Typeface.BOLD);
-        parent.addView(tv_pregunta_com);
+        //Luego de recorrer la lista de Preguntas y Repsuestas del Formulario
+        //Agregamos la sección de Comentarios
+        //Ya que esta sección siempre estará presente, sin importar el tipo ni el cliente
+        //Primero la Pregunta
+        TextView txtPreguntaComentarios = new TextView(getApplicationContext());
+        txtPreguntaComentarios.setText("Comentarios");
+        txtPreguntaComentarios.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.colorPrimaryDark));
+        txtPreguntaComentarios.setTextSize(20);
+        txtPreguntaComentarios.setTypeface(null, Typeface.BOLD);
+        //Adcionar el TextView al Layout Parent
+        parent.addView(txtPreguntaComentarios);
 
-        EditText txt_respuesta_com = (EditText) getLayoutInflater().inflate(R.layout.edittext_verif, null);
-        parent.addView(txt_respuesta_com);
+        //Después el EditText para llenar los datos
+        EditText etRespuestaComentarios = (EditText) getLayoutInflater().inflate(R.layout.edittext_verif, null);
+        //Adcionar el EditText al Layout Parent
+        parent.addView(etRespuestaComentarios);
 
-        n_fotos = Integer.parseInt(datos_verificacion.get(0).getN_foto_positiva());
+        //Obtenemos el número de fotografías necesarias según cliente y tipo de verf.
+        nro_fotos = Integer.parseInt(lstPreguntas.get(0).getN_foto_positiva());
 
+        //Creamos un linearLayout para las fotografías
         LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 450);
         layoutParams.setMargins(0, 10, 0, 0);
-        layout_fotos = new LinearLayout(getApplicationContext());
-        layout_fotos.setOrientation(LinearLayout.VERTICAL);
-        parent.addView(layout_fotos);
-        for (int j = 1; j <= n_fotos; j++) {
-            final int nro_foto = j;
+        layoutFotos = new LinearLayout(getApplicationContext());
+        layoutFotos.setOrientation(LinearLayout.VERTICAL);
+        //Adicionar el LayoutFotos al Layout Parent
+        parent.addView(layoutFotos);
 
-            button_foto = new ImageButton(getApplicationContext());
-            // button_foto.setId(j);
-            button_foto.setBackgroundResource(R.drawable.boton_camara);
-            button_foto.setScaleType(ImageView.ScaleType.FIT_XY);
-            button_foto.setLayoutParams(layoutParams);
-            button_foto.setOnClickListener(new View.OnClickListener() {
+        //Adicionar Botones Para las lstFotos
+        for (int j = 1; j <= nro_fotos; j++) {
+            final int cual_foto = j;
+            //Creamos el Botón para la foto
+            btnFoto = new ImageButton(getApplicationContext());
+            btnFoto.setBackgroundResource(R.drawable.boton_camara);
+            btnFoto.setScaleType(ImageView.ScaleType.FIT_XY);
+            btnFoto.setLayoutParams(layoutParams);
+            btnFoto.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    sacarfoto(nro_foto);
+                    sacarfoto(cual_foto);
                 }
             });
-            layout_fotos.addView(button_foto);
+            //Adicionar el Botón para la Foto al Layout Fotos
+            layoutFotos.addView(btnFoto);
         }
 
-        firma = datos_verificacion.get(0).getFirma();
-
+        //Comprobamos si la verif. necesitará de alguna Firma
+        firma = lstPreguntas.get(0).getFirma();
+        //Y creamos los parámetros para su VIEW
         LinearLayout.LayoutParams layoutParamsFirma = new LinearLayout.LayoutParams(350, 150);
         layoutParamsFirma.setMargins(0, 10, 0, 0);
         layoutParamsFirma.gravity= Gravity.CENTER;
 
+        //Si la verif. necesita firma su estado es "1"
         if (firma.equals("1")){
-
-            button_firma = new ImageButton(getApplicationContext());
-            button_firma.setBackgroundResource(R.drawable.boton_firma);
-            button_firma.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            button_firma.setLayoutParams(layoutParamsFirma);
-            button_firma.setOnClickListener(new View.OnClickListener() {
+            //Creamos botón para la firma
+            btnFirma = new ImageButton(getApplicationContext());
+            btnFirma.setBackgroundResource(R.drawable.boton_firma);
+            btnFirma.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            btnFirma.setLayoutParams(layoutParamsFirma);
+            btnFirma.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
+                    //Pasamos a la Actividad que nos ayudará a capturar la firma
                     Intent intent = new Intent(Formulario_Positiva.this, CaptureSignature.class);
                     intent.putExtra("id_ver", id_ver.toString());
                     startActivityForResult(intent,SIGNATURE_ACTIVITY);
                 }
             });
-            parent.addView(button_firma);
+            //Adicionar el Botón Firma al Layout Parent
+            parent.addView(btnFirma);
         }
-       // Log.e("SITU ERROR OBJ: ", lst_spinner.toString());
-       // Log.e("SITU ERROR ADP: ", lst_adapter.toString());
         Log.e("SITU ERROR CHILDS: ", parent.getChildCount()+"");
-        controlador = 0;
-        for (int q = 0; q < parent.getChildCount(); q++) {
-            View v = parent.getChildAt(q);
-            //Log.e("SITU ERROR OBJ: ", lst_spinner.toString());
-            //Log.e("SITU ERROR ADP: ", lst_adapter.toString());
 
+        //Recorremos el Layout Parent
+        for (int posicion_view = 0; posicion_view < parent.getChildCount(); posicion_view++) {
+            View v = parent.getChildAt(posicion_view);
             Log.e("SITU ERROR CHILDS: ", parent.getChildCount()+"");
-            Log.e("SITU ERROR VIEW nro: ", ""+q);
+            Log.e("SITU ERROR VIEW nro: ", ""+posicion_view);
             Log.e("SITU ERROR VIEW: ", v.toString());
-            System.out.println("MEL:"+ Arrays.toString(lst_adapter.toArray()));
-
+            //Pues aquí viene lo complicado con los Spinners...
+            //Verificamos si el View es un Spinner
              if (v instanceof Spinner) {
-
                 int check = 0;
-                Spinner res = (Spinner) v;
-                Log.e("SITU ERROR CONTAR: ", (q - 4)+"");
+                Spinner spRespuesta = (Spinner) v;
+                 //Si el tipo de Ver es 1 o 21 no necesita de la pregunta de "Cargo de Entrevistado"
+                 //por lo que tenemos que ver el SpinnerAdapter correspondiente en ese momento.
                 if(tipo_ver.equals("1")||acceso_cliente.equals("21")){
-                    Log.e("SITU API: ", lst_adapter.get(q - 4).toString());
-                    api = lst_adapter.get(q - 4);}
+                    Log.e("SITU API: ", lstAdapter.get(posicion_view - 4).toString());
+                    spinAdapterParaGenerar = lstAdapter.get(posicion_view - 4);}
                 else{
-                    Log.e("SITU API: ", lst_adapter.get(q - 6).toString());
-                    api = lst_adapter.get(q - 6);}
-// Log.e("SITU", ap.getItem(1).getValor().toString());
-                //res.setAdapter(ap);
-
-                for (int i = 0; i < api.getCount(); i++) {
-                    Log.e("SITU API: ", api.getCount() +"");
-                    if (!api.getItem(i).getDependientes().equals("0")) {
+                    Log.e("SITU API: ", lstAdapter.get(posicion_view - 6).toString());
+                    spinAdapterParaGenerar = lstAdapter.get(posicion_view - 6);}
+                //Analizamos si el Adapter contiene alguna respeusta que tiene dependientes
+                 //si lo tiene cambiamos el flag a "1"
+                for (int i = 0; i < spinAdapterParaGenerar.getCount(); i++) {
+                    Log.e("SITU API: ", spinAdapterParaGenerar.getCount() +"");
+                    if (!spinAdapterParaGenerar.getItem(i).getDependientes().equals("0")) {
                         check = 1;
                     }
                     Log.e("SITU CHECK: ",check+"");
                 }
 
                 if (check == 1) {
-                    final int pos = q;
-                    final TextView pregunta_especial = new TextView(getApplicationContext());
-                    final EditText respuesta_especial = (EditText) getLayoutInflater().inflate(R.layout.edittext_verif, null);
-                    final Spinner respuesta_especial_sp = (Spinner) getLayoutInflater().inflate(R.layout.spinner_verif, null);
-
-
-                    final List<Opcion> lst_opciones = new ArrayList<>();
-                    parent.addView(pregunta_especial, pos + 1);
+                    //Analizamos la posición para adicionar la pregunta que se abre
+                    final int posicion_actual = posicion_view;
+                    //Creamos un textView para pregunta, un EditText o un Spinner para ver que tipo es la respuesta
+                    final TextView txtPreguntaEspecial = new TextView(getApplicationContext());
+                    final EditText etRespuestaEspecial = (EditText) getLayoutInflater().inflate(R.layout.edittext_verif, null);
+                    final Spinner spRespuestaEspecial = (Spinner) getLayoutInflater().inflate(R.layout.spinner_verif, null);
+                    //Adicionar la Pregunta en la posición que corresponde en el Layout Parent
+                    parent.addView(txtPreguntaEspecial, posicion_actual + 1);
+                    //Necsitamos adicionar este nuevo valor a la lista de Spinners y Adapters
+                    //Por eso vemos cual es el tipo de Verif.
+                    //Como dije arriba agregamos un NULL a la lista de spinners y adapters porque este VIEW no es SPINENR
                     if(tipo_ver.equals("1")||acceso_cliente.equals("21"))
                     {
-                        lst_spinner.add(q-3,null);
-                        lst_adapter.add(q-3,null);
+                        lstSpinner.add(posicion_view-3,null);
+                        lstAdapter.add(posicion_view-3,null);
                     }
                     else{
-                        lst_spinner.add(q-5,null);
-                        lst_adapter.add(q-5,null);
+                        lstSpinner.add(posicion_view-5,null);
+                        lstAdapter.add(posicion_view-5,null);
                     }
-                    parent.addView(respuesta_especial, pos + 2);
+
+                    //Adicionar la Respuesta en la posición que corresponde en el Layout Parent
+                    parent.addView(etRespuestaEspecial, posicion_actual + 2);
+                    //Necsitamos adicionar este nuevo valor a la lista de Spinners y Adapters
+                    //Por eso vemos cual es el tipo de Verif.
+                    //Como dije arriba agregamos un NULL a la lista de spinners y adapters porque este VIEW no es SPINNER
                     if(tipo_ver.equals("1")||acceso_cliente.equals("21"))
                     {
-                        lst_spinner.add(q-2,null);
-                        lst_adapter.add(q-2,null);
+                        lstSpinner.add(posicion_view-2,null);
+                        lstAdapter.add(posicion_view-2,null);
                     }
                     else{
-                        lst_spinner.add(q-4,null);
-                        lst_adapter.add(q-4,null);
+                        lstSpinner.add(posicion_view-4,null);
+                        lstAdapter.add(posicion_view-4,null);
                     }
-                    respuesta_especial.setText("No procede");
-                    respuesta_especial.setTag(0 + "|" + 0);
-                    respuesta_especial.setVisibility(View.GONE);
-                    pregunta_especial.setVisibility(View.GONE);
-                    res.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                        SpinAdapter fin = api;
 
+                    //Ponemos un Texto y un Tag por Default
+                    etRespuestaEspecial.setText("No procede");
+                    etRespuestaEspecial.setTag(0 + "|" + 0);
+                    //Los ocultamos hasta confirmar que la opción seleccionada los habilite
+                    etRespuestaEspecial.setVisibility(View.GONE);
+                    txtPreguntaEspecial.setVisibility(View.GONE);
+                    //Analizamos el spinner y le damos un evento al hacerle click
+                    spRespuesta.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        SpinAdapter spinAdapterFinal = spinAdapterParaGenerar;
                         @Override
                         public void onItemSelected(AdapterView<?> adapterView, View view,
                                                    int position, long id) {
                             // Here you get the current item (a User object) that is selected by its position
-                            Log.e("SITU PROBANDO: ", fin.getItem(position).getValor()+" "+fin.getItem(position).getDependientes());
-                            Log.e("SITU ERROR OBJ: ", lst_spinner.toString());
-                            Log.e("SITU ERROR ADP: ", lst_adapter.toString());
+                            Log.e("SITU PROBANDO: ", spinAdapterFinal.getItem(position).getValor()+" "+ spinAdapterFinal.getItem(position).getDependientes());
+                            Log.e("SITU ERROR OBJ: ", lstSpinner.toString());
+                            Log.e("SITU ERROR ADP: ", lstAdapter.toString());
 
-                            if(!fin.getItem(position).getDependientes().equals("0")) {
-                                Formulario get = fu.getFormulario(fin.getItem(position).getDependientes(), datos_verificacion);
-                                pregunta_especial.setText(get.getPregunta());
-                                pregunta_especial.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.colorPrimaryDark));
-                                pregunta_especial.setTextSize(20);
-                                pregunta_especial.setTypeface(null, Typeface.BOLD);
-                                String tipo_v = get.getTipo();
+                            //analizamos si la opción seleccionada tiene dependientes
+                            if(!spinAdapterFinal.getItem(position).getDependientes().equals("0")) {
 
-                                if(tipo_v.equals("1")) {
-                                    Log.e("SITU: ", "ENTRO LA PUTAAAAA");
-                                    parent.removeView(parent.getChildAt(pos+2));
-                                    parent.addView(respuesta_especial_sp, pos+2);
-                                    String[] opciones = get.getOpciones().split("-");
-                                    String[] idopciones = get.getIdopciones().split("-");
-                                    String[] dependientes = get.getDependientes().split("-");
+                                //Obtener Dependientes
+                                Formulario formularioDependiente = fu.getFormulario(spinAdapterFinal.getItem(position).getDependientes(), lstPreguntas);
+                                //Darle el texto y el formato al View de Pregunta creada arriba
+                                txtPreguntaEspecial.setText(formularioDependiente.getPregunta());
+                                txtPreguntaEspecial.setTextColor(ContextCompat.getColor(getApplicationContext(), R.color.colorPrimaryDark));
+                                txtPreguntaEspecial.setTextSize(20);
+                                txtPreguntaEspecial.setTypeface(null, Typeface.BOLD);
+                                String tipo_dependiente = formularioDependiente.getTipo();
 
-                                    final List<Opcion> lst_opciones = new ArrayList<>();
-                                    for (int j = 0; j < opciones.length; j++) {
-                                        String value = get.getId().toString() + "|" + get.getTipo() + "|" + idopciones[j];
-                                        Opcion op = new Opcion(value, opciones[j], dependientes[j]);
-                                        Log.e("SITU ERROR: ", get.getId().toString() + "|" + get.getTipo() + "|" + idopciones[j]);
-                                        lst_opciones.add(op);
+                                //Analizamos el tipo
+                                //"1" es Spinner
+                                if(tipo_dependiente.equals("1")) {
+                                    //Quitamos el View de Respuestas normal
+                                    //lo remplazamos con una respuesta tipo Spinner
+                                    //misma idea para adicionar Spinner que arriba
+                                    parent.removeView(parent.getChildAt(posicion_actual+2));
+                                    parent.addView(spRespuestaEspecial, posicion_actual+2);
+                                    String[] opciones_dependiente = formularioDependiente.getOpciones().split("-");
+                                    String[] idopciones_dependiente = formularioDependiente.getIdopciones().split("-");
+                                    String[] dependientes_dependiente = formularioDependiente.getDependientes().split("-");
+
+                                    final List<Opcion> lstOpciones = new ArrayList<>();
+                                    for (int j = 0; j < opciones_dependiente.length; j++) {
+                                        String value = formularioDependiente.getId().toString() + "|" + formularioDependiente.getTipo() + "|" + idopciones_dependiente[j];
+                                        Opcion op = new Opcion(value, opciones_dependiente[j], dependientes_dependiente[j]);
+                                        Log.e("SITU ERROR: ", formularioDependiente.getId().toString() + "|" + formularioDependiente.getTipo() + "|" + idopciones_dependiente[j]);
+                                        lstOpciones.add(op);
                                     }
 
-                                    Opcion[] opciones_f = new Opcion[lst_opciones.size()];
-                                    opciones_f = lst_opciones.toArray(opciones_f);
-                                    adapter = new SpinAdapter(Formulario_Positiva.this,
+                                    Opcion[] vOpciones = new Opcion[lstOpciones.size()];
+                                    vOpciones = lstOpciones.toArray(vOpciones);
+                                    spinAdapterPrincipal = new SpinAdapter(Formulario_Positiva.this,
                                             android.R.layout.simple_spinner_item,
-                                            opciones_f);
-                                    respuesta_especial_sp.setAdapter(adapter);
-                                    selected_item = respuesta_especial_sp.getSelectedItem().toString();
+                                            vOpciones);
+                                    spRespuestaEspecial.setAdapter(spinAdapterPrincipal);
+                                    //Necesitamos adicionar este nuevo valor a la lista de Spinners y Adapters
+                                    //Por eso vemos cual es el tipo de Verif.
+                                    //Esto es SPINNER así que tenemos que agregar el Spinner y su Spinner
+                                    // Adapter a las listas
                                     if(tipo_ver.equals("1")||acceso_cliente.equals("21"))
                                     {
-
-                                            lst_spinner.remove(pos - 2);
-                                            lst_adapter.remove(pos - 2);
-                                            lst_spinner.add(pos - 2, respuesta_especial_sp);
-                                            lst_adapter.add(pos - 2, adapter);
-
+                                            lstSpinner.remove(posicion_actual - 2);
+                                            lstAdapter.remove(posicion_actual - 2);
+                                            lstSpinner.add(posicion_actual - 2, spRespuestaEspecial);
+                                            lstAdapter.add(posicion_actual - 2, spinAdapterPrincipal);
                                     }
                                     else{
-
-                                            lst_spinner.remove(pos - 4);
-                                            lst_adapter.remove(pos - 4);
-                                            lst_spinner.add(pos - 4, respuesta_especial_sp);
-                                            lst_adapter.add(pos - 4, adapter);
-
+                                            lstSpinner.remove(posicion_actual - 4);
+                                            lstAdapter.remove(posicion_actual - 4);
+                                            lstSpinner.add(posicion_actual - 4, spRespuestaEspecial);
+                                            lstAdapter.add(posicion_actual - 4, spinAdapterPrincipal);
                                     }
-                                    respuesta_especial_sp.setVisibility(View.VISIBLE);
-                                    Log.e("SITU SELECTED: ", "pos: " + respuesta_especial_sp.getSelectedItemPosition());
+                                    spRespuestaEspecial.setVisibility(View.VISIBLE);
+                                    Log.e("SITU SELECTED: ", "pos: " + spRespuestaEspecial.getSelectedItemPosition());
                                 }
+                                //Si no es Spinner es de respuesta abierta, así que adicionamos el TAG y un nuevo Texto
                                 else{
-                                    Log.e("SITU: ", "ENTRO LA PUTAAAAA WEAAA");
-                                    respuesta_especial.setTag(get.getId() + "|" + get.getTipo());
-                                 //   respuesta_especial.setText("No procede");
-                                    respuesta_especial.setText("No indica");
-                                    respuesta_especial.setVisibility(View.VISIBLE);
+                                    etRespuestaEspecial.setTag(formularioDependiente.getId() + "|" + formularioDependiente.getTipo());
+                                    etRespuestaEspecial.setText("No indica");
+                                    //lo mostramos
+                                    etRespuestaEspecial.setVisibility(View.VISIBLE);
                                 }
-                                pregunta_especial.setVisibility(View.VISIBLE);
+                                //Mostramos la pregunta
+                                txtPreguntaEspecial.setVisibility(View.VISIBLE);
                             }
                             else{
+                                //Esto está para que desaparezca en tiempo real si es que seleccionamos otra opción
                                 Log.e("SITU, ","WEEEA ENTRO");
-                              /*  View delete_view_pregunta = parent.getChildAt(pos+1);
-                                View delete_view_respuesta = parent.getChildAt(pos+2);
-                                parent.removeView(delete_view_pregunta);
-                                parent.removeView(delete_view_respuesta);*/
+                                //Ya no me acuerdo por qué hacíamos esto, pero si o si teniamos q forzarlo
                                 Opcion[] vacio = new Opcion[]{null,null,null,null,null,null,null,null};
-                                SpinAdapter adapter_vacio = new SpinAdapter(Formulario_Positiva.this,
+                                SpinAdapter spinAdapterVacio = new SpinAdapter(Formulario_Positiva.this,
                                         android.R.layout.simple_spinner_item,
                                         vacio);
                                  if(tipo_ver.equals("1")||acceso_cliente.equals("21")){
-
-                                    lst_adapter.remove(pos - 2);
-                                     lst_adapter.add(pos-2, adapter_vacio);
-
-                                       // parent.removeView();
-                                        //lst_spinner.add(pos - 2, null);
-                                        //lst_adapter.add(pos - 2, null);
+                                    lstAdapter.remove(posicion_actual - 2);
+                                     lstAdapter.add(posicion_actual-2, spinAdapterVacio);
                                 }
                                 else{
-
-                                   lst_adapter.remove(pos - 4);
-                                     lst_adapter.add(pos-4, adapter_vacio);
-                                     //lst_spinner.add(pos - 4, null);
-                                       // lst_adapter.add(pos - 4, null);
+                                   lstAdapter.remove(posicion_actual - 4);
+                                     lstAdapter.add(posicion_actual-4, spinAdapterVacio);
                                }
-                                respuesta_especial.setText("No procede");
-                                respuesta_especial.setVisibility(View.GONE);
-                                respuesta_especial_sp.setVisibility(View.GONE);
-                                pregunta_especial.setVisibility(View.GONE);
+                                etRespuestaEspecial.setText("No procede");
+                                etRespuestaEspecial.setVisibility(View.GONE);
+                                spRespuestaEspecial.setVisibility(View.GONE);
+                                txtPreguntaEspecial.setVisibility(View.GONE);
                             }
-                            //final_value = ap.getItem(position).getID();
                         }
-
                         @Override
                         public void onNothingSelected(AdapterView<?> adapter) {
                         }
@@ -817,18 +870,6 @@ public class Formulario_Positiva extends AppCompatActivity {
                 }
             }
         }
-    }
-
-
-    private class MyOnDateChangedListener implements DatePicker.OnDateChangedListener {
-        @Override
-        public void onDateChanged(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
-            txt_respuesta_date.setText("" + dayOfMonth + "-" + (monthOfYear + 1) + "-" + year);
-        }
-    }
-
-    private void displayDate() {
-        txt_respuesta_date.setText("" + fecha);
     }
 
     private ProgressDialog progressDialog;
@@ -839,122 +880,133 @@ public class Formulario_Positiva extends AppCompatActivity {
         progressDialog.setMessage("Enviando Verificación....");
         progressDialog.show();
 
-        Log.e("MEL:", Arrays.toString(lst_adapter.toArray()));
-
-        vacio = 0;
+        //El vacío nos indicará si hay algún campo que no haya sido llenado
+        //Si el vacío es > a 0, entonce sno dejará enviar los datos
+        verificar_campos_vacio = 0;
         int childs = parent.getChildCount();
-        Log.e("CHILDS", "" + childs + "  " + n_fotos);
-        List<String> lst_preguntas = new ArrayList<>();
-        List<String> lst_respuestas = new ArrayList<>();
+        Log.e("CHILDS", "" + childs + "  " + nro_fotos);
+        List<String> lstPreguntas = new ArrayList<>();
+        List<String> lstRespuestas = new ArrayList<>();
 
-        int n_keys = 0;
-        for (int i = 0; i < childs; i++) {
+        //Recorremos los Childs del Parent
+        for (int i = 1; i < childs; i++) {
             View v = parent.getChildAt(i);
+            //Dependiendo el Tipo de Vista tenemos que recoger los datos de manera diferente
             if (v instanceof EditText) {
-                EditText et = (EditText) v;
-                String final_et;
-                if (et.getText().toString().trim().length() == 0) {
-                    vacio++;
+                EditText etRespuesta = (EditText) v;
+                String respuesta_final;
+                //Ver si el EditText está vacío
+                if (etRespuesta.getText().toString().trim().length() == 0) {
+                    verificar_campos_vacio++;
                 }
-                if (et.getTag() != null)
-                    final_et = et.getTag() + "|" + et.getText().toString();
+                //Con el TAG obtenemos el String que enviaremos a la BD
+                if (etRespuesta.getTag() != null)
+                    respuesta_final = etRespuesta.getTag() + "|" + etRespuesta.getText().toString();
                 else
-                    final_et = et.getText().toString();
+                    respuesta_final = etRespuesta.getText().toString();
 
-                lst_respuestas.add(final_et);
+                //Adicionamos a una Lista de respuestas
+                lstRespuestas.add(respuesta_final);
             } else if (v instanceof TextView) {
-                TextView tv = (TextView) v;
-                String tv_final = tv.getText().toString().replace(" ", "_").toLowerCase();
-                lst_preguntas.add(tv_final);
+                TextView txtPregunta = (TextView) v;
+                //Esta es la pregunta, tenemos que ahcerle unas modificaciones para enviarla
+                String pregunta_final = txtPregunta.getText().toString().replace(" ", "_").toLowerCase();
+                lstPreguntas.add(pregunta_final);
             } else if (v instanceof LinearLayout) {
-                LinearLayout ly = (LinearLayout) v;
-                Log.e("SITU: ", "ENTRO AQUI " + i + " " + ly.getChildCount());
-
-                if (ly.getChildAt(0) instanceof EditText) {
+                //Si es LinearLayout o son las lstFotos, o es para la respuesta de tipo FECHA
+                LinearLayout layoutFecha = (LinearLayout) v;
+                //Vemos los child de este Linear Layout
+                //Sacamos los datos del EditText
+                if (layoutFecha.getChildAt(0) instanceof EditText) {
                     Log.e("SITU: ", "ENTRO AQUI2" + i);
-                    String final_et;
-                    final_et = txt_respuesta_date.getTag() + "|" + txt_respuesta_date.getText().toString();
-                    lst_respuestas.add(final_et);
+                    String respuesta_final;
+                    //Con el TAG y los DATOS obtenemos el String que enviaremos a la BD
+                    respuesta_final = etRespuestaDate.getTag() + "|" + etRespuestaDate.getText().toString();
+                    //Adicionamos este String a la Lista de Respuestas
+                    lstRespuestas.add(respuesta_final);
                 }
             } else if (v instanceof Spinner) {
-                //Spinner sp=lst_spinner.get(i-6);
+                 //Necesitamos el Adaptador del Spinner, para analizar el objecto "Opción"
                 if(tipo_ver.equals("1")||acceso_cliente.equals("21"))
-                    ap = lst_adapter.get(i - 4);
+                    spinAdapterParaEnviar = lstAdapter.get(i - 4);
                 else
-                    ap = lst_adapter.get(i - 6);
+                    spinAdapterParaEnviar = lstAdapter.get(i - 6);
 
-                Spinner sp = (Spinner) v;
-                sp.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                Spinner spRespuesta = (Spinner) v;
+                spRespuesta.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
 
                     @Override
                     public void onItemSelected(AdapterView<?> adapterView, View view,
                                                int position, long id) {
                         // Here you get the current item (a User object) that is selected by its position
                         Log.e("SITU PROBANDO: ", "ENTRO!!!!!!!!!!");
-                        final_value = ap.getItem(position).getID();
+                        valor_final_spinner = spinAdapterParaEnviar.getItem(position).getID();
                     }
-
                     @Override
                     public void onNothingSelected(AdapterView<?> adapter) {
                     }
                 });
-              //  Log.e("SITU ERROR: ", i + " pos: " + sp.getSelectedItemPosition());
-              //  Log.e("SITU ERROR: ", i + " item: " + ap.getItem(sp.getSelectedItemPosition()).getID());
-                if(ap.getItem(sp.getSelectedItemPosition()) != null){
-                    final_value = ap.getItem(sp.getSelectedItemPosition()).getID();
+
+                if(spinAdapterParaEnviar.getItem(spRespuesta.getSelectedItemPosition()) != null){
+                    valor_final_spinner = spinAdapterParaEnviar.getItem(spRespuesta.getSelectedItemPosition()).getID();
                 }else{
-                    final_value = "";
+                    valor_final_spinner = "";
                 }
-                lst_respuestas.add(final_value);
+                //Adicionamos este String a la Lista de Respuestas
+                lstRespuestas.add(valor_final_spinner);
             }
             Log.e("SITU ERROR VIEW: ", v.toString());
-            Log.e("SITU ERROR VACIO: ", vacio+"");
-
-
-            //          Log.e("SITU: ", "LISTA "+i+ lst_respuestas.get(i).toString());
+            Log.e("SITU ERROR VACIO: ", verificar_campos_vacio +"");
         }
-        if (vacio != 0) {
-
+        //Si vacío es mayr a 0, significa que hay algún campo vque no está llenado
+        //SI este es el caso, lanza un diálogo y evita que los datos se envían
+        if (verificar_campos_vacio != 0) {
             progressDialog.dismiss();
+            dialogNotificarVacio = new Dialog(Formulario_Positiva.this);
+            dialogNotificarVacio.requestWindowFeature(Window.FEATURE_NO_TITLE);
+            dialogNotificarVacio.setContentView(R.layout.dialog_vacio);
+            dialogNotificarVacio.show();
 
-            dialog2 = new Dialog(Formulario_Positiva.this);
-            dialog2.requestWindowFeature(Window.FEATURE_NO_TITLE);
-            dialog2.setContentView(R.layout.dialog_vacio);
-            dialog2.show();
+            Button btnDialogCancelar = (Button) dialogNotificarVacio.findViewById(R.id.cancelar_boton);
 
-            Button con = (Button) dialog2.findViewById(R.id.cancelar_boton);
-
-            con.setOnClickListener(new View.OnClickListener() {
+            btnDialogCancelar.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    dialog2.dismiss();
+                    dialogNotificarVacio.dismiss();
                 }
             });
 
 
-        } else {
+        }
+        //Si todos los campos están llenos
+        else {
         JsonObject innerObject = new JsonObject();
-        Log.e("TAMANO!! ", "" + lst_preguntas.size());
-        Log.e("TAMANO!! ", "" + lst_respuestas.size());
+        Log.e("TAMANO!! ", "" + lstPreguntas.size());
+        Log.e("TAMANO!! ", "" + lstRespuestas.size());
 
-        for (int k = 0; k < lst_preguntas.size(); k++) {
-            Log.e("INDICE!! ", "" + k + "   " + lst_respuestas.get(k).toString());
-            innerObject.addProperty(lst_preguntas.get(k).toString(), lst_respuestas.get(k).toString());
+            //Creamos un Objeto JSON con las preguntas y las respuestas para guardarlo EN LA MEMORIA DEL CELULAR
+        for (int k = 0; k < lstPreguntas.size(); k++) {
+            Log.e("INDICE!! ", "" + k + "   " + lstRespuestas.get(k).toString());
+            innerObject.addProperty(lstPreguntas.get(k).toString(), lstRespuestas.get(k).toString());
         }
 
         JsonObject jsono = new JsonObject();
         jsono.add("respuestas", innerObject);
 
-        String jsonenviar = new Gson().toJson(lst_respuestas);
+        String jsonenviar = new Gson().toJson(lstRespuestas);
 
+            //Si tiene Firma, adicionamos la dirección en la cual está guardada
         if(firma.equals("1"))
-            fotofirma = Environment.getExternalStorageDirectory()
+            direccion_foto_firma = Environment.getExternalStorageDirectory()
                     + "/Bigsomer_firmas_bgvs/" + id_ver +"_firma" + ".jpg";
         else
-            fotofirma = "";
+            direccion_foto_firma = "";
 
+        //Abrimos Base de Datos
         crearBD = new DBHelper(Formulario_Positiva.this);
         db = crearBD.getWritableDatabase();
+
+        //Crear un ContentValues para insertar los datos en la BD
         ContentValues values1 = new ContentValues();
         values1.put("id_fr", id_ver);
         values1.put("lat", lat);
@@ -962,16 +1014,19 @@ public class Formulario_Positiva extends AppCompatActivity {
         values1.put("fecha_realizada", fecha_actual);
         values1.put("tipo_ver", tipo_ver);
         values1.put("acceso_cliente", acceso_cliente);
-        values1.put("fotos", fotos.toString());
-        values1.put("firma",fotofirma);
+        values1.put("fotos", lstFotos.toString());
+        values1.put("firma", direccion_foto_firma);
         values1.put("respuestas", jsonenviar.toString());
         values1.put("estado", "pendiente");
         db.insert("formulario_respuestas", null, values1);
 
-        //fu.eliminar_tarea(getApplicationContext(),id_ver);
-        System.out.println("id_ver: " + id_ver + " fotos: " + fotos.toString() + "cosota: " + jsonenviar.toString() + " LA COSA Q IRA EN LA OTRA COSA " + jsono);
+        System.out.println("id_ver: " + id_ver + " fotos: " + lstFotos.toString() + "cosota: " + jsonenviar.toString() + " LA COSA Q IRA EN LA OTRA COSA " + jsono);
         System.out.println("LAT: " + lat + " LON: " + lon);
 
+        //generamos el PDF antes de enviar
+        generarPdf();
+
+        //Crea un HashMap para generar el JSON PARA ENVIAR
         HashMap<String, String> map = new HashMap<>();// Mapeo previo
 
         map.put("id_ver", id_ver);
@@ -984,8 +1039,9 @@ public class Formulario_Positiva extends AppCompatActivity {
 
         JSONObject jobject = new JSONObject(map);
 
+            //Vemos si hay problemas con el servidor
+            //Comprueba si se están subiendo las lstFotos
             if(fu.check_connection(getApplicationContext())) {
-
                 Log.e("SITU ENVIAR: ", jobject.toString());
                 // Actualizar datos en el servidor
                 VolleySingleton.getInstance(getApplicationContext()).addToRequestQueue(
@@ -1030,7 +1086,6 @@ public class Formulario_Positiva extends AppCompatActivity {
                         }
                 );
             }else{
-
                 Toast.makeText(getApplicationContext(),"Hay un problema, con el servidor por favor inténtelo más tarde.", Toast.LENGTH_LONG).show();
                 Toast.makeText(getApplicationContext(),"Si este error persiste, por favor comuníquelo a su supervisor.",Toast.LENGTH_LONG).show();
                 progressDialog.dismiss();
@@ -1059,19 +1114,11 @@ public class Formulario_Positiva extends AppCompatActivity {
                 case "1":
 
                     Log.e("SITU ENVIAR: ", "BIEN");
-                    // Enviar código de éxito
-                    //getActivity().setResult(Activity.RESULT_OK);
-                    // Terminar actividad
-                    //getActivity().finish();
                     break;
 
                 case "2":
                     // Mostrar mensaje
                     Log.e("SITU ENVIAR: ", "MAL");
-                    // Enviar código de falla
-                    // getActivity().setResult(Activity.RESULT_CANCELED);
-                    // Terminar actividad
-                    //getActivity().finish();
                     break;
             }
             new Guardarfotos().execute();
@@ -1081,41 +1128,72 @@ public class Formulario_Positiva extends AppCompatActivity {
     }
 
     private int q_foto;
-    static final int REQUEST_TAKE_PHOTO = 1;
+    static final int REQUEST_TAKE_PHOTO = 0;
+    static final int SELECT_FILE = 1;
 
+    //Método para sacar fotografía o elegir de la galería
     public void sacarfoto(int nro_foto) {
 
         q_foto = nro_foto - 1;
 
-        nombre_foto = id_ver + "_" + nro_foto;
-        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        nombre_foto = Environment.getExternalStorageDirectory() + "/Bigsomer_aver/" + id_ver + "_" + nro_foto + ".jpg";
-        File fot = new File(nombre_foto);
-        //Hay camara?????
-        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-            // Create the File where the photo should go
-            // Continue only if the File was successfully created
-            if (fot != null) {
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(fot));
-                startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
-                control_foto = true;
+        //Darle el nombre a la foto y la dirección donde se guardará
+        direccion_foto = id_ver + "_" + nro_foto;
+        direccion_foto = Environment.getExternalStorageDirectory() + "/Bigsomer_aver/" + id_ver + "_" + nro_foto + ".jpg";
+        final File fot = new File(direccion_foto);
+
+        //Diálogo para seleccionar de la Cámara o de la Galería
+        dialogEnviarVerificacion =new Dialog(Formulario_Positiva.this);
+        dialogEnviarVerificacion.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialogEnviarVerificacion.setContentView(R.layout.dialog_fotos);
+        dialogEnviarVerificacion.show();
+
+        Button btnDialogFoto =(Button) dialogEnviarVerificacion.findViewById(R.id.positiva);
+        Button btnDialogGaleria = (Button) dialogEnviarVerificacion.findViewById(R.id.negativa);
+
+        //Sacar fotografía
+        btnDialogFoto.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+                    // Crea el File donde la foto debería ir
+                    // Continúa solamente si el File fue creado exitosamente
+                    if (fot != null) {
+                        takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(fot));
+                        dialogEnviarVerificacion.dismiss();
+                        startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
+                    }
+                }
             }
-        }
+        });
+
+        //Elegir galería
+        btnDialogGaleria.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(
+                        Intent.ACTION_PICK,
+                        android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                intent.setType("image/*");
+                dialogEnviarVerificacion.dismiss();
+                startActivityForResult(
+                        Intent.createChooser(intent, "Select File"),
+                        SELECT_FILE);
+            }
+        });
     }
 
-    private ProgressDialog pDialog2;
+    private ProgressDialog progressDialogFotos;
     private String resultado2 = "problemas";
-    VariablesURL variables = new VariablesURL();
 
     class Guardarfotos extends AsyncTask<String, String, String> {
         protected void onPreExecute() {
             super.onPreExecute();
-            pDialog2 = new ProgressDialog(Formulario_Positiva.this);
-            pDialog2.setMessage("Enviando fotos...");
-            pDialog2.setIndeterminate(false);
-            pDialog2.setCancelable(false);
-            pDialog2.show();
-
+            progressDialogFotos = new ProgressDialog(Formulario_Positiva.this);
+            progressDialogFotos.setMessage("Enviando Fotos...");
+            progressDialogFotos.setIndeterminate(false);
+            progressDialogFotos.setCancelable(false);
+            progressDialogFotos.show();
         }
 
         @SuppressWarnings("deprecation")
@@ -1124,9 +1202,6 @@ public class Formulario_Positiva extends AppCompatActivity {
             //GUARDAR DATOS EN SQLITE
             crearBD = new DBHelper(Formulario_Positiva.this);
             db = crearBD.getWritableDatabase();
-            ContentValues values1 = new ContentValues();
-            values1 = new ContentValues();
-
 
             try {
                 StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
@@ -1141,9 +1216,9 @@ public class Formulario_Positiva extends AppCompatActivity {
 
                 //SUBIR LAS FOTOS
                 try {
-                    for (int i = 0; i < fotos.size(); i++) {
+                    for (int i = 0; i < lstFotos.size(); i++) {
 
-                        File file = new File(fotos.get(i));
+                        File file = new File(lstFotos.get(i));
                         entityBuilder.addBinaryBody("fotoUp", file);
 
                         HttpEntity entity = entityBuilder.build();
@@ -1156,7 +1231,7 @@ public class Formulario_Positiva extends AppCompatActivity {
                     }
 
                     if(firma.equals("1")){
-                        File file = new File(fotofirma);
+                        File file = new File(direccion_foto_firma);
                         entityBuilder.addBinaryBody("fotoUp", file);
 
                         HttpEntity entity = entityBuilder.build();
@@ -1190,7 +1265,7 @@ public class Formulario_Positiva extends AppCompatActivity {
         }
 
         protected void onPostExecute(String file_url) {
-            pDialog2.dismiss();
+            progressDialogFotos.dismiss();
             //		pushDB();
             if (resultado2.equals("ok"))
                 Toast.makeText(getApplicationContext(), "Verificación subida correctamente", Toast.LENGTH_LONG).show();
@@ -1208,25 +1283,80 @@ public class Formulario_Positiva extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        //displayDate();
-        if (resultCode == Activity.RESULT_OK
-                && resultCode != Formulario_Positiva.this.RESULT_CANCELED) {
+        File file = new File(direccion_foto);
+        Uri uri;
+        boolean error_foto = false;
+        //Recibe el dato para ver si se eligió foto o galería
+        if (resultCode == Activity.RESULT_OK && resultCode != Formulario_Positiva.this.RESULT_CANCELED) {
             if (requestCode == REQUEST_TAKE_PHOTO) {
+                //Procesar el sacado de foto
                 new OperacionesFoto().execute();
-            } else {
+            } else if (requestCode == SELECT_FILE) {
+                Uri selectedImageUri = data.getData();
+                String tempPath = getPath(selectedImageUri, Formulario_Positiva.this);
+
+                Bitmap bm;
+                BitmapFactory.Options btmapOptions = new BitmapFactory.Options();
+                bm = BitmapFactory.decodeFile(tempPath, btmapOptions);
+                try {
+                    System.gc();
+                    bm = Bitmap.createScaledBitmap(
+                            bm, 400, 300, false);
+                    try {
+                        FileOutputStream out = new FileOutputStream(file);
+                        bm.compress(Bitmap.CompressFormat.JPEG, 100, out);
+                        out.close();
+                        uri = Uri.fromFile(new File(direccion_foto));
+                        Log.i("Comprimiendo imagen", "si");
+                    } catch (Exception e) {
+                        Log.i("Comprimiendo imagen", "no");
+                        error_foto = true;
+                        e.printStackTrace();
+                    }
+                } catch (NullPointerException e) {
+                    error_foto = true;
+                    Log.i("Foto recibida?", "no");
+                    e.printStackTrace();
+                } catch (OutOfMemoryError e) {
+                    error_foto = true;
+                    Log.i("Out of memory?", "Sip");
+                    e.printStackTrace();
+                }
+
+                //Obtiene el botón en el Layout de lstFotos
+                //guarda el nombre y la dirección de la foto en un vector
+                View ve = layoutFotos.getChildAt(q_foto);
+                if (!lstFotos.contains(direccion_foto)) {
+                    lstFotos.add(direccion_foto);
+                }
+                ImageButton ib = (ImageButton) ve;
+                //Cambia la imagen del botón por la foto
+                ib.setImageBitmap(bm);
+            }else {
                 Toast.makeText(Formulario_Positiva.this,
                         "Error con la foto, toma una de nuevo",
                         Toast.LENGTH_SHORT).show();
             }
-        } else {
+        }
+        else{
             Toast.makeText(Formulario_Positiva.this, "No se ha realizado la foto",
                     Toast.LENGTH_SHORT).show();
         }
     }
 
+    //Obtiene la dirección de donde se saca la foto de la galería
+    public String getPath(Uri uri, Activity activity) {
+        String[] projection = { MediaStore.MediaColumns.DATA };
+        Cursor cursor = activity
+                .managedQuery(uri, projection, null, null, null);
+        int column_index = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATA);
+        cursor.moveToFirst();
+        return cursor.getString(column_index);
+    }
 
+    //Clase para sacar la foto
     class OperacionesFoto extends AsyncTask<String, String, String> {
-        File file = new File(nombre_foto);
+        File file = new File(direccion_foto);
         private ProgressDialog DialogFoto;
         private boolean error_foto = false;
         Uri uri;
@@ -1245,12 +1375,12 @@ public class Formulario_Positiva extends AppCompatActivity {
             try {
                 System.gc();
                 Bitmap bit_ = Bitmap.createScaledBitmap(
-                        BitmapFactory.decodeFile(nombre_foto), 400, 300, false);
+                        BitmapFactory.decodeFile(direccion_foto), 400, 300, false);
                 try {
                     FileOutputStream out = new FileOutputStream(file);
                     bit_.compress(Bitmap.CompressFormat.JPEG, 100, out);
                     out.close();
-                    uri = Uri.fromFile(new File(nombre_foto));
+                    uri = Uri.fromFile(new File(direccion_foto));
                     Log.i("Comprimiendo imagen", "si");
                 } catch (Exception e) {
                     Log.i("Comprimiendo imagen", "no");
@@ -1284,15 +1414,14 @@ public class Formulario_Positiva extends AppCompatActivity {
                 if (error_foto == false) {
                     Log.e("FOTO CAMARA AQUI==", "ENTRA!!" + q_foto);
 
-                    View ve = layout_fotos.getChildAt(q_foto);
-                    if (!fotos.contains(nombre_foto)) {
-                        fotos.add(nombre_foto);
+                    View viewFoto = layoutFotos.getChildAt(q_foto);
+                    if (!lstFotos.contains(direccion_foto)) {
+                        lstFotos.add(direccion_foto);
                     }
 
-                    ImageButton ib = (ImageButton) ve;
-                    ib.setImageBitmap(BitmapFactory
-                            .decodeFile(nombre_foto));
-                    // Picasso.with(getApplicationContext()).load(uri).resize(400,300).centerCrop().into(ib);
+                    ImageButton btnImagenFoto = (ImageButton) viewFoto;
+                    btnImagenFoto.setImageBitmap(BitmapFactory
+                            .decodeFile(direccion_foto));
                 } else {
                     Toast.makeText(
                             Formulario_Positiva.this,
@@ -1306,15 +1435,49 @@ public class Formulario_Positiva extends AppCompatActivity {
         }
     }
 
-    public boolean isEmpty() {
-        boolean vacio = false;
+    @TargetApi(Build.VERSION_CODES.KITKAT)
+    public void generarPdf(){
 
-        for (int i = 0; i <= parent.getChildCount(); i++) {
-            View v = parent.getChildAt(i);
-            if (v instanceof EditText) {
+        PdfDocument document = new PdfDocument();
+        //Oculta el Layout de lstFotos para sacar la captura
+        layoutFotos.setVisibility(View.GONE);
+        View content = parent;
+        // crate a page info with attributes as below
+        // page number, height and width
+        // i have used height and width to that of pdf content view
+        int pageNumber = 1;
+        PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(content.getWidth(),
+                content.getHeight() - 20, pageNumber).create();
 
-            }
+        // create a new page from the PageInfo
+        PdfDocument.Page page = document.startPage(pageInfo);
+
+        // repaint the user's text into the page
+        content.draw(page.getCanvas());
+
+        // do final processing of the page
+        document.finishPage(page);
+
+        // saving pdf document to sdcard
+        SimpleDateFormat sdf = new SimpleDateFormat("ddMMyyyyhhmmss");
+        String pdfName = "pdf_"
+                + id_ver + ".pdf";
+
+        // all created files will be saved at path /sdcard/PDFDemo_AndroidSRC/
+        File outputFile = new File(Environment.getExternalStorageDirectory()+"/BigSomer_pdf/",pdfName);
+
+        try {
+            //outputFile.mkdirs();
+            outputFile.createNewFile();
+            OutputStream out = new FileOutputStream(outputFile);
+            document.writeTo(out);
+            document.close();
+            out.close();
+            Toast.makeText(getApplicationContext(),"Pdf creado "+pdfName,Toast.LENGTH_LONG).show();
+            layoutFotos.setVisibility(View.VISIBLE);
+        } catch (IOException e) {
+            Toast.makeText(getApplicationContext(),"ERROR"+e.toString(),Toast.LENGTH_LONG).show();
+           Log.e("PDF: ", e.toString());
         }
-        return vacio;
     }
 }

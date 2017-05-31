@@ -86,6 +86,17 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:textAppearance="?android:attr/textAppearanceLarge"
+                        android:text="Cargando coordenadas..."
+                        android:textAlignment="center"
+                        android:id="@+id/txt_lat_lon"
+                        android:textColor="@color/colorPrimary"
+                        android:textSize="15dp"
+                        />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="?android:attr/textAppearanceLarge"
                         android:text="Nombre del entrevistado"
                         android:id="@+id/nombre_static"
                         android:textColor="@color/colorPrimaryDark"

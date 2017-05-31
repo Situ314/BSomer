@@ -1,6 +1,7 @@
 package com.example.jeancarla.bigsomer.activities;
 
 import android.Manifest;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
@@ -8,14 +9,17 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.pdf.PdfDocument;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Environment;
 import android.os.StrictMode;
 import android.provider.MediaStore;
@@ -60,6 +64,8 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -69,29 +75,44 @@ import java.util.Map;
 
 public class Formulario_Negativa extends AppCompatActivity {
 
-    private String acceso_cliente, tipo_ver, id_ver, nombre_foto;
+    //para guardar los datos recibidos de la anterior Actividad
+    private String acceso_cliente, tipo_ver, id_ver;
 
+    //Strings para guardar los datos introducios en los campos de nombre,ci,cargo y comentarios
+    private String nombre,ci,cargo,comentarios;
+    
+    //Datos para las fotos
+    private String nombre_foto;
+    private int nro_fotos;
+    boolean control_foto = false;
+    private List<String> lstFotos;
+
+    //DataBase
     DBHelper crearBD;
     private SQLiteDatabase db;
 
-    boolean control_foto = false;
-    LinearLayout parent, layout_fotos;
-    private int n_fotos;
-    private List<String> fotos;
+    //Vistas
+    LinearLayout parent, layoutFotos;
+    private ImageView ivLocation;
+    private ImageButton btnFoto;
+    private EditText etNombre, etCi, etCargo, etComentarios;
+    private TextView txtPdfLat;  
+   
+    //localización
     private double lat = 0;
     private double lon = 0;
     public LocationManager locationManager;
     public LocationListener locationListener;
     public Location location;
-    private ImageView iv_location;
-    private ImageButton button_foto;
+
+    //Para obtener las funciones
     private Funciones fu = new Funciones();
 
-    private EditText et_nombre,et_ci,et_cargo,et_comentarios;
-    private String nombre,ci,cargo,comentarios;
+    //fechas
+    //para guardar la fecha actual
+    private String fecha_actual;
     private Calendar fechaYhora = Calendar.getInstance();
     SimpleDateFormat fecha = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    String fecha_actual;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -103,15 +124,17 @@ public class Formulario_Negativa extends AppCompatActivity {
         tipo_ver = getIntent().getStringExtra("tipo");
         id_ver = getIntent().getStringExtra("id_ver");
 
-        et_nombre=(EditText) findViewById(R.id.v_nombre);
-        et_cargo=(EditText) findViewById(R.id.v_cargo);
-        et_ci=(EditText) findViewById(R.id.v_ci);
-        et_comentarios=(EditText) findViewById(R.id.v_com);
+        etNombre =(EditText) findViewById(R.id.v_nombre);
+        etCargo =(EditText) findViewById(R.id.v_cargo);
+        etCi =(EditText) findViewById(R.id.v_ci);
+        etComentarios =(EditText) findViewById(R.id.v_com);
+
+        txtPdfLat = (TextView) findViewById (R.id.txt_lat_lon);
 
         //******************LOCATION THINGS
-        fotos = new ArrayList<>();
+        lstFotos = new ArrayList<>();
 
-        iv_location = (ImageView) findViewById(R.id.iv_location);
+        ivLocation = (ImageView) findViewById(R.id.iv_location);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         location = locationManager
                 .getLastKnownLocation(LocationManager.GPS_PROVIDER);
@@ -120,9 +143,10 @@ public class Formulario_Negativa extends AppCompatActivity {
             public void onLocationChanged(Location location) {
                 lat = location.getLatitude();
                 lon = location.getLongitude();
-
-                iv_location.setImageResource(R.drawable.ic_location_on_black_24dp);
-                //estado1.setImageResource(R.drawable.check);
+                //Cambia el texto en la imagen
+                txtPdfLat.setText("LAT: "+lat+" / LON: "+lon);
+                //Cambia la imagen indicando que ya se agarraron las coordenadas
+                ivLocation.setImageResource(R.drawable.ic_location_on_black_24dp);
                 if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     // TODO: Consider calling
                     //    ActivityCompat#requestPermissions
@@ -165,44 +189,44 @@ public class Formulario_Negativa extends AppCompatActivity {
                 + "/Bigsomer_aver");
         if (!directory.isDirectory())
             directory.mkdirs();
-
         nombre_foto = Environment.getExternalStorageDirectory() + "/Bigsomer_aver/" + id_ver + ".jpg";
+        //FOTOS**********
 
+        // **** Fecha Actual
         fecha_actual = fecha.format(fechaYhora.getTime());
 
-        //FOTOS**************
+        // Obtener número de fotos
+        String nroFotos=fu.nro_fotosn(getApplicationContext(),acceso_cliente,tipo_ver);
+        Log.e("SITU ",nroFotos);
+        nro_fotos = Integer.parseInt(nroFotos);
 
-        String nrofotos=fu.nro_fotosn(getApplicationContext(),acceso_cliente,tipo_ver);
-        Log.e("SITU ",nrofotos);
-        n_fotos= Integer.parseInt(nrofotos);
-
+        // Dar parámetros al Layout de las fotos y adicionarlo al Layout Principal
         LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 450);
         layoutParams.setMargins(0, 10, 0, 0);
-        layout_fotos = new LinearLayout(getApplicationContext());
-        layout_fotos.setOrientation(LinearLayout.VERTICAL);
-        parent.addView(layout_fotos);
-        //button_foto.setLayoutParams();
-        for (int j = 1; j <= n_fotos; j++) {
-            final int nro_foto = j;
+        layoutFotos = new LinearLayout(getApplicationContext());
+        layoutFotos.setOrientation(LinearLayout.VERTICAL);
+        parent.addView(layoutFotos);
 
-            button_foto = new ImageButton(getApplicationContext());
-            // button_foto.setId(j);
-            button_foto.setBackgroundResource(R.drawable.boton_camara);
-            button_foto.setScaleType(ImageView.ScaleType.FIT_XY);
-            button_foto.setLayoutParams(layoutParams);
-            button_foto.setOnClickListener(new View.OnClickListener() {
+        //Adicionar Botones Para las fotos
+        for (int j = 1; j <= nro_fotos; j++) {
+            final int nroFotoAdicionar = j;
+            btnFoto = new ImageButton(getApplicationContext());
+            btnFoto.setBackgroundResource(R.drawable.boton_camara);
+            btnFoto.setScaleType(ImageView.ScaleType.FIT_XY);
+            btnFoto.setLayoutParams(layoutParams);
+            btnFoto.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    sacarfoto(nro_foto);
+                    sacarfoto(nroFotoAdicionar);
                 }
             });
-            layout_fotos.addView(button_foto);
-
+            layoutFotos.addView(btnFoto);
         }
 
         setToolbar();
     }
 
+    //Toolbar
     private void setToolbar() {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -225,57 +249,54 @@ public class Formulario_Negativa extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
 
         int id = item.getItemId();
+        //Botón en el Menú para enviar la verificación
         if (id == R.id.action_enviar) {
-
             dialog = new Dialog(Formulario_Negativa.this);
             dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
             dialog.setContentView(R.layout.dialog_nuevo);
             dialog.show();
+            TextView txtDialogTitulo = (TextView) dialog.findViewById(R.id.info_text);
+            TextView txtDialogInfo = (TextView) dialog.findViewById(R.id.info_text2);
+            TextView txtDialogInfo2 = (TextView) dialog.findViewById(R.id.info_text3);
+
+            Button btnDialogEnviar = (Button) dialog.findViewById(R.id.enviar_boton);
+            Button btnDialogCancelar = (Button) dialog.findViewById(R.id.cancelar_boton);
+
+            //Verificar si agarro Latitud y longitud
             if (lat != 0 && lon != 0) {
-                if (n_fotos == fotos.size()) {
-                    TextView titulo = (TextView) dialog.findViewById(R.id.info_text);
-                    titulo.setText("ENVIAR VERIFICACIÓN");
+                //Verifica si hay las fotos requeridas
+                if (nro_fotos == lstFotos.size()) {
+                    //Crear diálogo preguntando si el verificador está seguro de enviar la tarea
+                    txtDialogTitulo.setText("ENVIAR VERIFICACIÓN");
+                    txtDialogInfo.setText("¿Está seguro de querer enviar el formulario? Si está seguro presione ENVIAR");
+                    txtDialogInfo2.setVisibility(View.GONE);
 
-                    TextView info = (TextView) dialog.findViewById(R.id.info_text2);
-                    info.setText("¿Está seguro de querer enviar el formulario? Si está seguro presione ENVIAR");
-
-                    TextView info2 = (TextView) dialog.findViewById(R.id.info_text3);
-                    info2.setVisibility(View.GONE);
-
-                    Button b_enviar = (Button) dialog.findViewById(R.id.enviar_boton);
-                    b_enviar.setOnClickListener(new View.OnClickListener() {
+                    btnDialogEnviar.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
+                            //Procedemos a enviar Formulario
                             enviarFormulario();
                             dialog.dismiss();
                         }
                     });
 
-                    Button b_cancelar = (Button) dialog.findViewById(R.id.cancelar_boton);
-                    b_cancelar.setOnClickListener(new View.OnClickListener() {
+                    btnDialogCancelar.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
                             dialog.dismiss();
                         }
                     });
-
                     return true;
                 } else {
-                    TextView titulo = (TextView) dialog.findViewById(R.id.info_text);
-                    titulo.setText("NO SE ENCONTRARON LAS FOTOS REQUERIDAS");
+                    //Crea diálogo indicando que no se cuenta con las fotos requeridas
+                    txtDialogTitulo.setText("NO SE ENCONTRARON LAS FOTOS REQUERIDAS");
+                    txtDialogInfo.setText("La presente verificación necesita de " + nro_fotos + " fotografías para poder ser enviada. Asegúrese de haber sacado todas las fotos o de tener espacio suficiente en la memoria del celular");
+                    txtDialogInfo2.setVisibility(View.GONE);
 
-                    TextView info = (TextView) dialog.findViewById(R.id.info_text2);
-                    info.setText("La presente verificación necesita de " + n_fotos + " fotografías para poder ser enviada. Asegúrese de haber sacado todas las fotos o de tener espacio suficiente en la memoria del celular");
+                    btnDialogEnviar.setVisibility(View.GONE);
 
-                    TextView info2 = (TextView) dialog.findViewById(R.id.info_text3);
-                    info2.setVisibility(View.GONE);
-
-                    Button b_enviar = (Button) dialog.findViewById(R.id.enviar_boton);
-                    b_enviar.setVisibility(View.GONE);
-
-                    Button b_cancelar = (Button) dialog.findViewById(R.id.cancelar_boton);
-                    b_cancelar.setText("OK");
-                    b_cancelar.setOnClickListener(new View.OnClickListener() {
+                    btnDialogCancelar.setText("OK");
+                    btnDialogCancelar.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
                             dialog.dismiss();
@@ -285,21 +306,15 @@ public class Formulario_Negativa extends AppCompatActivity {
                     return true;
                 }
             } else {
-                TextView titulo = (TextView) dialog.findViewById(R.id.info_text);
-                titulo.setText("NO SE ENCONTRARON COORDENADAS");
+                //Crea diálogo indicando que no se cuenta con las coordenadas
+                txtDialogTitulo.setText("NO SE ENCONTRARON COORDENADAS");
+                txtDialogInfo.setText("No se obtuvieron coordenadas geográficas. Asegúrese de estar al aire libre y vuelva a intentarlo");
+                txtDialogInfo2.setVisibility(View.GONE);
 
-                TextView info = (TextView) dialog.findViewById(R.id.info_text2);
-                info.setText("No se obtuvieron coordenadas geográficas. Asegúrese de estar al aire libre y vuelva a intentarlo");
+                btnDialogEnviar.setVisibility(View.GONE);
 
-                TextView info2 = (TextView) dialog.findViewById(R.id.info_text3);
-                info2.setVisibility(View.GONE);
-
-                Button b_enviar = (Button) dialog.findViewById(R.id.enviar_boton);
-                b_enviar.setVisibility(View.GONE);
-
-                Button b_cancelar = (Button) dialog.findViewById(R.id.cancelar_boton);
-                b_cancelar.setText("OK");
-                b_cancelar.setOnClickListener(new View.OnClickListener() {
+                btnDialogCancelar.setText("OK");
+                btnDialogCancelar.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         dialog.dismiss();
@@ -309,22 +324,24 @@ public class Formulario_Negativa extends AppCompatActivity {
                 return true;
             }
 
-        } else {
+        }
+        //Botón para volver atrás
+        else {
             dialog = new Dialog(Formulario_Negativa.this);
             dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
             dialog.setContentView(R.layout.dialog_two);
             dialog.show();
 
-            Button b_enviar = (Button) dialog.findViewById(R.id.si_boton);
-            b_enviar.setOnClickListener(new View.OnClickListener() {
+            Button btnDialogSi = (Button) dialog.findViewById(R.id.si_boton);
+            btnDialogSi.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     finish();
                 }
             });
 
-            Button b_cancelar = (Button) dialog.findViewById(R.id.no_boton);
-            b_cancelar.setOnClickListener(new View.OnClickListener() {
+            Button btnDialogNo = (Button) dialog.findViewById(R.id.no_boton);
+            btnDialogNo.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     dialog.dismiss();
@@ -334,38 +351,118 @@ public class Formulario_Negativa extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    private int q_foto;
-    static final int REQUEST_TAKE_PHOTO = 1;
+    private int cualFoto;
+    static final int REQUEST_TAKE_PHOTO = 0;
+    static final int SELECT_FILE = 1;
 
+    //Método para sacar fotografía o elegir de la galería
     public void sacarfoto(int nro_foto) {
 
-        q_foto = nro_foto - 1;
+        cualFoto = nro_foto - 1;
 
+        //Darle el nombre a la foto y la dirección donde se guardará
         nombre_foto = id_ver + "_" + nro_foto;
-        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         nombre_foto = Environment.getExternalStorageDirectory() + "/Bigsomer_aver/" + id_ver + "_" + nro_foto + ".jpg";
-        File fot = new File(nombre_foto);
-        //Hay camara?????
-        if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
-            // Create the File where the photo should go
-            // Continue only if the File was successfully created
-            if (fot != null) {
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(fot));
-                startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
-                control_foto = true;
-            }
-        }
-    }
+        final File fot = new File(nombre_foto);
 
+        //Diálogo para seleccionar de la Cámara o de la Galería
+        dialog=new Dialog(Formulario_Negativa.this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialog.setContentView(R.layout.dialog_fotos);
+        dialog.show();
+
+        Button posi=(Button) dialog.findViewById(R.id.positiva);
+        Button nega = (Button) dialog.findViewById(R.id.negativa);
+
+        //Sacar fotografía
+        posi.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+                    // Crea el File donde la foto debería ir
+                    // Continúa solamente si el File fue creado exitosamente
+                    if (fot != null) {
+                        takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(fot));
+                        dialog.dismiss();
+                        startActivityForResult(takePictureIntent, REQUEST_TAKE_PHOTO);
+                        control_foto = true;
+                    }
+                }
+            }
+        });
+
+        //Elegir galería
+        nega.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(
+                        Intent.ACTION_PICK,
+                        android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                intent.setType("image/*");
+                dialog.dismiss();
+                startActivityForResult(
+                        Intent.createChooser(intent, "Select File"),
+                        SELECT_FILE);
+            }
+        });
+    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         //displayDate();
+        boolean error_foto = false;
+        File file = new File(nombre_foto);
+        Uri uri;
+
+        //Recibe el dato para ver si se eligió foto o galería
         if (resultCode == Activity.RESULT_OK
                 && resultCode != Formulario_Negativa.this.RESULT_CANCELED) {
             if (requestCode == REQUEST_TAKE_PHOTO) {
+                //Procesar el sacado de foto
                 new OperacionesFoto().execute();
-            } else {
+            } else if (requestCode == SELECT_FILE) {
+                Uri selectedImageUri = data.getData();
+                String tempPath = getPath(selectedImageUri, Formulario_Negativa.this);
+                Bitmap bm;
+                BitmapFactory.Options btmapOptions = new BitmapFactory.Options();
+                bm = BitmapFactory.decodeFile(tempPath, btmapOptions);
+                try {
+                    System.gc();
+                    bm = Bitmap.createScaledBitmap(
+                            bm, 400, 300, false);
+                    try {
+                        FileOutputStream out = new FileOutputStream(file);
+                        bm.compress(Bitmap.CompressFormat.JPEG, 100, out);
+                        out.close();
+                        uri = Uri.fromFile(new File(nombre_foto));
+                        Log.i("Comprimiendo imagen", "si");
+                    } catch (Exception e) {
+                        Log.i("Comprimiendo imagen", "no");
+                        error_foto = true;
+                        e.printStackTrace();
+                    }
+                } catch (NullPointerException e) {
+                    error_foto = true;
+                    Log.i("Foto recibida?", "no");
+                    e.printStackTrace();
+                } catch (OutOfMemoryError e) {
+                    error_foto = true;
+                    Log.i("Out of memory?", "Sip");
+                    e.printStackTrace();
+                }
+
+                //Obtiene el botón en el Layout de fotos
+                //guarda el nombre y la dirección de la foto en un vector
+                View ve = layoutFotos.getChildAt(cualFoto);
+                if (!lstFotos.contains(nombre_foto)) {
+                    lstFotos.add(nombre_foto);
+                }
+                ImageButton ib = (ImageButton) ve;
+                Log.e("SITU GALLERY: ", nombre_foto);
+                //Cambia la imagen del botón por la foto
+                ib.setImageBitmap(bm);
+            }else {
                 Toast.makeText(Formulario_Negativa.this,
                         "Error con la foto, toma una de nuevo",
                         Toast.LENGTH_SHORT).show();
@@ -376,12 +473,23 @@ public class Formulario_Negativa extends AppCompatActivity {
         }
     }
 
+    //Obtiene la dirección de donde se saca la foto de la galería
+    public String getPath(Uri uri, Activity activity) {
+        String[] projection = { MediaStore.MediaColumns.DATA };
+        Cursor cursor = activity
+                .managedQuery(uri, projection, null, null, null);
+        int column_index = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATA);
+        cursor.moveToFirst();
+        return cursor.getString(column_index);
+    }
 
+
+    //Clase para sacar la foto
     class OperacionesFoto extends AsyncTask<String, String, String> {
         File file = new File(nombre_foto);
         private ProgressDialog DialogFoto;
         private boolean error_foto = false;
-        Uri uri;
+        Uri uri;            
 
         protected void onPreExecute() {
             super.onPreExecute();
@@ -434,17 +542,17 @@ public class Formulario_Negativa extends AppCompatActivity {
             }
             if (error_volviendo == false) {
                 if (error_foto == false) {
-                    Log.e("FOTO CAMARA AQUI==", "ENTRA!!" + q_foto);
-
-                    View ve = layout_fotos.getChildAt(q_foto);
-                    if (!fotos.contains(nombre_foto)) {
-                        fotos.add(nombre_foto);
+                    Log.e("FOTO CAMARA AQUI==", "ENTRA!!" + cualFoto);
+                    //Obtiene el botón en el Layout de fotos
+                    //guarda el nombre y la dirección de la foto en un vector
+                    View ve = layoutFotos.getChildAt(cualFoto);
+                    if (!lstFotos.contains(nombre_foto)) {
+                        lstFotos.add(nombre_foto);
                     }
-
+                    //Cambia la imagen del botón por la foto tomada
                     ImageButton ib = (ImageButton) ve;
                     ib.setImageBitmap(BitmapFactory
                             .decodeFile(nombre_foto));
-                    // Picasso.with(getApplicationContext()).load(uri).resize(400,300).centerCrop().into(ib);
                 } else {
                     Toast.makeText(
                             Formulario_Negativa.this,
@@ -458,20 +566,24 @@ public class Formulario_Negativa extends AppCompatActivity {
         }
     }
 
+    //Enviar los datos y las fotos
     private ProgressDialog progressDialog;
     public void enviarFormulario(){
         progressDialog = new ProgressDialog(Formulario_Negativa.this);
         progressDialog.setMessage("Descargando Tareas....");
         progressDialog.show();
 
+        //Obtener los datos de los EditText
+        nombre= etNombre.getText().toString();
+        ci= etCi.getText().toString();
+        cargo= etCargo.getText().toString();
+        comentarios= etComentarios.getText().toString();
 
-        nombre=et_nombre.getText().toString();
-        ci=et_ci.getText().toString();
-        cargo=et_cargo.getText().toString();
-        comentarios=et_comentarios.getText().toString();
-
+        //Abrir Base de datos
         crearBD = new DBHelper(Formulario_Negativa.this);
         db = crearBD.getWritableDatabase();
+
+        //Crear un ContentValues para insertar los datos en la BD
         ContentValues values1 = new ContentValues();
         values1.put("id_fr", id_ver);
         values1.put("lat", lat);
@@ -479,7 +591,7 @@ public class Formulario_Negativa extends AppCompatActivity {
         values1.put("fecha_realizada", fecha_actual);
         values1.put("tipo_ver", tipo_ver);
         values1.put("acceso_cliente", acceso_cliente);
-        values1.put("fotos", fotos.toString());
+        values1.put("fotos", lstFotos.toString());
         values1.put("nombre", nombre);
         values1.put("ci", ci);
         values1.put("cargo", cargo);
@@ -487,7 +599,10 @@ public class Formulario_Negativa extends AppCompatActivity {
         values1.put("estado", "pendiente");
         db.insert("formulario_negativas", null, values1);
 
+        //Generar PDF
+        generarPdf();
 
+        //Crea un HashMap para generar el JSON
         HashMap<String, String> map = new HashMap<>();// Mapeo previo
 
         map.put("id_ver", id_ver);
@@ -502,8 +617,8 @@ public class Formulario_Negativa extends AppCompatActivity {
         map.put("fecha_realizada", fecha_actual);
 
         JSONObject jobject = new JSONObject(map);
-
         Log.e("SITU ENVIAR: ", jobject.toString());
+
         // Actualizar datos en el servidor
         VolleySingleton.getInstance(getApplicationContext()).addToRequestQueue(
                 new JsonObjectRequest(
@@ -516,12 +631,14 @@ public class Formulario_Negativa extends AppCompatActivity {
                                 // Procesar la respuesta del servidor
                                 progressDialog.dismiss();
                                 procesarRespuesta(response);
-
                             }
                         },
                         new Response.ErrorListener() {
                             @Override
                             public void onErrorResponse(VolleyError error) {
+                                //Se dispara si es que no existe conexión
+                                //Los datos se encuentran guardados en la memoria del celular
+                                //para Sincronizar después
                                 Log.d("SITU", "Error Volley: " + error.getMessage());
                                 Toast.makeText(getApplicationContext(), "No se pudo comunicar con el servidor en este momento, inténtelo más tarde...", Toast.LENGTH_LONG).show();
                                 Intent i = new Intent(getApplicationContext(), MenuPrincipal.class);
@@ -565,21 +682,15 @@ public class Formulario_Negativa extends AppCompatActivity {
                 case "1":
 
                     Log.e("SITU ENVIAR: ", "BIEN");
-                    // Enviar código de éxito
-                    //getActivity().setResult(Activity.RESULT_OK);
-                    // Terminar actividad
-                    //getActivity().finish();
                     break;
 
                 case "2":
                     // Mostrar mensaje
                     Log.e("SITU ENVIAR: ", "MAL");
                     // Enviar código de falla
-                    // getActivity().setResult(Activity.RESULT_CANCELED);
-                    // Terminar actividad
-                    //getActivity().finish();
                     break;
             }
+            //Una vez guarda los datos, sube las fotos
             new Guardarfotos().execute();
         } catch (JSONException e) {
             e.printStackTrace();
@@ -598,7 +709,6 @@ public class Formulario_Negativa extends AppCompatActivity {
             pDialog2.setIndeterminate(false);
             pDialog2.setCancelable(false);
             pDialog2.show();
-
         }
 
         @SuppressWarnings("deprecation")
@@ -607,8 +717,6 @@ public class Formulario_Negativa extends AppCompatActivity {
             //GUARDAR DATOS EN SQLITE
             crearBD = new DBHelper(Formulario_Negativa.this);
             db = crearBD.getWritableDatabase();
-            ContentValues values1 = new ContentValues();
-            values1 = new ContentValues();
 
             try {
                 StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
@@ -622,10 +730,11 @@ public class Formulario_Negativa extends AppCompatActivity {
                 entityBuilder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
 
                 //SUBIR LAS FOTOS
+                //Recorre el vector
                 try {
-                    for (int i = 0; i < fotos.size(); i++) {
+                    for (int i = 0; i < lstFotos.size(); i++) {
 
-                        File file = new File(fotos.get(i));
+                        File file = new File(lstFotos.get(i));
                         entityBuilder.addBinaryBody("fotoUp", file);
 
                         HttpEntity entity = entityBuilder.build();
@@ -633,11 +742,11 @@ public class Formulario_Negativa extends AppCompatActivity {
                         HttpResponse response = httpclient.execute(httppost);
                         java.lang.String respuestaWeb = EntityUtils.toString(response
                                 .getEntity());
-
                         System.out.println("La web me muestra+ ////////////  " + respuestaWeb);
                     }
                     httpclient.getConnectionManager().shutdown();
                     resultado2 = "ok";
+                    //Una vez se hayan subido las fotos, cambia el estado de la verificación de "pendiente" a "subida"
                     ContentValues values2 = new ContentValues();
                     values2.put("estado", "subida");
                     db.update("formulario_negativas", values2, "id_fr" + " = ?", new String[]{id_ver});
@@ -645,7 +754,6 @@ public class Formulario_Negativa extends AppCompatActivity {
                     e.printStackTrace();
                     Log.e("Conexion", "NO");
                 }
-                //resultado2 = "ok";
             } catch (Exception e) {
                 resultado2 = "problemas";
             }
@@ -666,5 +774,50 @@ public class Formulario_Negativa extends AppCompatActivity {
             db.close();
         }
 
+    }
+
+    @TargetApi(Build.VERSION_CODES.KITKAT)
+    public void generarPdf(){
+
+        PdfDocument document = new PdfDocument();
+        //Oculta el Layout de fotos para sacar la captura
+        layoutFotos.setVisibility(View.GONE);
+        View content = parent;
+        // crate a page info with attributes as below
+        // page number, height and width
+        // i have used height and width to that of pdf content view
+        int pageNumber = 1;
+        PdfDocument.PageInfo pageInfo = new PdfDocument.PageInfo.Builder(content.getWidth(),
+                content.getHeight() - 20, pageNumber).create();
+
+        // create a new page from the PageInfo
+        PdfDocument.Page page = document.startPage(pageInfo);
+
+        // repaint the user's text into the page
+        content.draw(page.getCanvas());
+
+        // do final processing of the page
+        document.finishPage(page);
+
+        // saving pdf document to sdcard
+        SimpleDateFormat sdf = new SimpleDateFormat("ddMMyyyyhhmmss");
+        String pdfName = "pdf_"
+                + id_ver + ".pdf";
+
+        // all created files will be saved at path /sdcard/BigSomer_pdf/
+        File outputFile = new File(Environment.getExternalStorageDirectory()+"/BigSomer_pdf/",pdfName);
+
+        try {
+            outputFile.createNewFile();
+            OutputStream out = new FileOutputStream(outputFile);
+            document.writeTo(out);
+            document.close();
+            out.close();
+            Toast.makeText(getApplicationContext(),"Pdf creado "+pdfName,Toast.LENGTH_LONG).show();
+            layoutFotos.setVisibility(View.VISIBLE);
+        } catch (IOException e) {
+            Toast.makeText(getApplicationContext(),"ERROR"+e.toString(),Toast.LENGTH_LONG).show();
+            Log.e("PDF: ", e.toString());
+        }
     }
 }

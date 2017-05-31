@@ -33,8 +33,8 @@ public class Mapa_Detalles extends AppCompatActivity implements OnMapReadyCallba
     private GoogleMap mMap;
     private Dialog dialog;
     private Spinner mMapTypeSelector;
-    private String nombre,medidor,tarea,direccion,ci,comentarios,acceso_cliente,tipo_ver,id_ver, nombre_empresa;
-    private TextView txtnombre,txtmedidor,txttarea,txtdireccion,txtci,txtcomentarios, label;
+    private String nombre,medidor,tarea,direccion,ci,comentarios,acceso_cliente,tipo_ver,id_ver, nombre_empresa, falta;
+    private TextView txtnombre,txtmedidor,txttarea,txtdireccion,txtci,txtcomentarios, label, f_falta;
     private double lat,lon;
     private static final int LOCATION_REQUEST_CODE = 1;
     @Override
@@ -42,6 +42,7 @@ public class Mapa_Detalles extends AppCompatActivity implements OnMapReadyCallba
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_mapa__detalles);
 
+        //Obtener todos los datos de la verificación
         acceso_cliente = getIntent().getStringExtra("cliente");
         tipo_ver = getIntent().getStringExtra("tipo");
         id_ver = getIntent().getStringExtra("id_ver");
@@ -54,20 +55,22 @@ public class Mapa_Detalles extends AppCompatActivity implements OnMapReadyCallba
         ci = getIntent().getStringExtra("ci");
         comentarios = getIntent().getStringExtra("comentarios");
         nombre_empresa = getIntent().getStringExtra("nombre_empresa");
+        falta = getIntent().getStringExtra("falta");
 
+        //LLenar los campos con los datos recibidos
         txtnombre=(TextView)findViewById(R.id.t_nombre);
         txtci=(TextView)findViewById(R.id.t_ci);
         txtmedidor=(TextView)findViewById(R.id.t_medidor);
         txtdireccion=(TextView)findViewById(R.id.t_direccion);
         txtcomentarios=(TextView)findViewById(R.id.t_referencias);
         label=(TextView)findViewById(R.id.label);
+        f_falta=(TextView)findViewById(R.id.falta);
 
         txtnombre.setText(nombre);
         txtcomentarios.setText(comentarios);
         txtci.setText(ci);
         txtdireccion.setText(direccion);
-
-        //Toast.makeText(getApplicationContext(),lat+" "+lon,Toast.LENGTH_LONG).show();
+        f_falta.setText(falta);
 
         if (tipo_ver.equals("1")) {
             txtmedidor.setText(medidor);
@@ -77,9 +80,11 @@ public class Mapa_Detalles extends AppCompatActivity implements OnMapReadyCallba
             txtmedidor.setText(nombre_empresa);
         }
         setToolbar();
+
         if (getSupportActionBar() != null) // Habilitar up button
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
+        //Toolbar para el amapa con la ubicación de la Tarea
         CollapsingToolbarLayout collapser =
                 (CollapsingToolbarLayout) findViewById(R.id.collapser);
         collapser.setTitle("Tarea Nro: "+tarea);
@@ -90,6 +95,7 @@ public class Mapa_Detalles extends AppCompatActivity implements OnMapReadyCallba
 
         // Registrar escucha onMapReadyCallback
         // Setear escucha al FAB
+        //FAB que te permite realizar verif. positiva, negativa o visita
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(
                 new View.OnClickListener() {
@@ -102,6 +108,7 @@ public class Mapa_Detalles extends AppCompatActivity implements OnMapReadyCallba
 
                         Button posi=(Button) dialog.findViewById(R.id.positiva);
                         Button nega = (Button) dialog.findViewById(R.id.negativa);
+                        Button visita = (Button) dialog.findViewById(R.id.visita);
 
                         posi.setOnClickListener(new View.OnClickListener() {
                             @Override
@@ -130,7 +137,19 @@ public class Mapa_Detalles extends AppCompatActivity implements OnMapReadyCallba
                                 startActivity(i);
                             }
                         });
-                       //AQUI IR A AVERIGUAR
+
+                        visita.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                Intent i = new Intent(getApplicationContext(), Formulario_Visita.class);
+                                Bundle bundle = new Bundle();
+                                bundle.putSerializable("id_ver", id_ver);
+                                i.putExtras(bundle);
+                                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+                                startActivity(i);
+                            }
+                        });
                     }
                 }
         );
@@ -149,6 +168,7 @@ public class Mapa_Detalles extends AppCompatActivity implements OnMapReadyCallba
         return true;
     }
 
+    //DATOS PARA EL MAPA
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
@@ -169,7 +189,6 @@ public class Mapa_Detalles extends AppCompatActivity implements OnMapReadyCallba
                         LOCATION_REQUEST_CODE);
             }
         }
-
 
         UiSettings uiSettings = mMap.getUiSettings();
         uiSettings.setScrollGesturesEnabled(true);

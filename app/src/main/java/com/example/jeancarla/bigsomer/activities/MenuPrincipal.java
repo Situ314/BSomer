@@ -10,7 +10,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.StrictMode;
 import android.support.design.widget.FloatingActionButton;
-import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -58,8 +57,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.nio.channels.FileChannel;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,23 +69,36 @@ public class MenuPrincipal extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     private SQLiteDatabase db;
-    private Gson gson = new Gson();
-    private static final String TAG = "CHECK";
-    private ProgressDialog pDialog2;
-    private int index_enviar = 0;
-
-    private String[] enviar_positivas;
-    private List<String[]> lst_respuestas = new ArrayList<>();
-    private List<String[]> lst_negativas = new ArrayList<>();
-    private String id_fr, lat, lon, fotos, firma, respuestas, fecha_realizada, tipo_ver, acceso_cliente, nombre, ci, cargo, comentarios;
-    private int pendientes, pendientes_n;
-    private String quees;
     DBHelper crearBD;
-    String id_ver, id_user;
 
-    Button lst_tareas, sincronizar, historial, fotos_faltantes, solicitudes;
+    //GSON
+    private Gson gson = new Gson();
 
-    List<String> datosusuario;
+    //TAG
+    private static final String TAG = "CHECK";
+
+    //Arrays
+    private List<String[]> lstRespuestas = new ArrayList<>();
+    private List<String[]> lstNegativas = new ArrayList<>();
+    private List<String> lstDatosUsuario;
+
+    //Datos que necesitaremos para las Pendientes
+    private String id_fr, lat, lon, fotos, firma, respuestas, fecha_realizada, tipo_ver, acceso_cliente, nombre, ci, cargo, comentarios;
+    private int pendientes_positivas, pendientes_negativas;
+
+    //No sé para que usaba esta variable, pero mejor no la toques...
+    private String quees;
+
+    //El id del usuario que ingreso
+    String id_user;
+
+    //Obtener fecha actual
+    private Calendar fechaYhora = Calendar.getInstance();
+    private String f_actual;
+
+    //todos los botones en el menu
+    Button btnLstTareas, btnSincronizar, btnHistorial, btnFotosFaltantes, btnSolicitudes, btnMapa;
+
     Funciones fu = new Funciones();
 
     @Override
@@ -93,30 +107,31 @@ public class MenuPrincipal extends AppCompatActivity
         setContentView(R.layout.activity_menu_principal);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
 
+        //Cada que entre al Menu crea un backup de la base de datos interna.
+        //Ubicada en la raíz del celular bajo el nombre "todo.db"
         pushDB();
 
-       // boolean intentar = fu.check_connection(getApplicationContext());
-        lst_tareas = (Button) findViewById(R.id.lista_tareas);
-        sincronizar = (Button) findViewById(R.id.sincronizar);
-        historial = (Button) findViewById(R.id.historial);
-        fotos_faltantes = (Button) findViewById(R.id.fotos);
-        solicitudes = (Button) findViewById(R.id.solicitudes);
+        btnLstTareas = (Button) findViewById(R.id.lista_tareas);
+        btnSincronizar = (Button) findViewById(R.id.sincronizar);
+        btnHistorial = (Button) findViewById(R.id.historial);
+        btnFotosFaltantes = (Button) findViewById(R.id.fotos);
+        //No sirve para nada Botón SOlicitudes
+        btnSolicitudes = (Button) findViewById(R.id.solicitudes);
+        btnMapa = (Button) findViewById(R.id.mapa);
 
-        historial.setVisibility(View.GONE);
-        solicitudes.setVisibility(View.GONE);
+        btnHistorial.setVisibility(View.GONE);
+        btnSolicitudes.setVisibility(View.GONE);
 
         setSupportActionBar(toolbar);
 
-        datosusuario = fu.DomsinFoto(MenuPrincipal.this, null);
-        pendientes = fu.hay_tareas_pendientes(getApplicationContext());
-        pendientes_n = fu.hay_negativas_pendientes(getApplicationContext());
+        lstDatosUsuario = fu.DomsinFoto(MenuPrincipal.this, null);
+        pendientes_positivas = fu.hay_tareas_pendientes(getApplicationContext());
+        pendientes_negativas = fu.hay_negativas_pendientes(getApplicationContext());
 
-        int total = pendientes + pendientes_n;
+        int total = pendientes_positivas + pendientes_negativas;
 
-        sincronizar.setText("SINCRONIZAR (" + total + ")");
+        btnSincronizar.setText("SINCRONIZAR (" + total + ")");
         id_user = fu.consulta_id_usuario(MenuPrincipal.this, "");
-        TelephonyManager mngr = (TelephonyManager) getApplicationContext().getSystemService(getApplicationContext().TELEPHONY_SERVICE);
-        id_ver = mngr.getDeviceId();
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -128,17 +143,18 @@ public class MenuPrincipal extends AppCompatActivity
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
         View header = navigationView.getHeaderView(0);
-        System.out.print(datosusuario.get(3) + " " + datosusuario.get(4) + " " + datosusuario.get(5));
-        TextView navUsername = (TextView) header.findViewById(R.id.nombre_usuario);
-        navUsername.setText(datosusuario.get(3) + " " + datosusuario.get(4) + " " + datosusuario.get(5));
-        TextView datos = (TextView) header.findViewById(R.id.datos);
-        datos.setText(datosusuario.get(6) + " - " + datosusuario.get(7));
-        ImageView foto = (ImageView) header.findViewById(R.id.foto);
+        System.out.print(lstDatosUsuario.get(3) + " " + lstDatosUsuario.get(4) + " " + lstDatosUsuario.get(5));
+        TextView txtNavUsername = (TextView) header.findViewById(R.id.nombre_usuario);
+        txtNavUsername.setText(lstDatosUsuario.get(3) + " " + lstDatosUsuario.get(4) + " " + lstDatosUsuario.get(5));
+        TextView txtNavDatos = (TextView) header.findViewById(R.id.datos);
+        txtNavDatos.setText(lstDatosUsuario.get(6) + " - " + lstDatosUsuario.get(7));
+        ImageView ivNavFoto = (ImageView) header.findViewById(R.id.foto);
 
-        Picasso.with(getApplicationContext()).load("http://bgaver.s3.amazonaws.com/usuarios_fotos/" + datosusuario.get(0) + ".jpg").resize(100, 100).into(foto);
+        //obtener la foto del usuario según su código
+        Picasso.with(getApplicationContext()).load("http://bgaver.s3.amazonaws.com/usuarios_fotos/" + lstDatosUsuario.get(0) + ".jpg").resize(100, 100).into(ivNavFoto);
 
         //TAREA DE LOS BOTONES
-        lst_tareas.setOnClickListener(new View.OnClickListener() {
+        btnLstTareas.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (fu.hay_tareas(getApplicationContext()) > 0) {
@@ -151,23 +167,14 @@ public class MenuPrincipal extends AppCompatActivity
             }
         });
 
-        sincronizar.setOnClickListener(new View.OnClickListener() {
+        btnSincronizar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 sincronizarPendientes();
             }
         });
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                pedirTareas(id_user);
-                pedirClientes();
-            }
-        });
-
-        historial.setOnClickListener(new View.OnClickListener() {
+        btnHistorial.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (fu.hay_enviadas(getApplicationContext()) > 0) {
@@ -180,7 +187,7 @@ public class MenuPrincipal extends AppCompatActivity
             }
         });
 
-        fotos_faltantes.setOnClickListener(new View.OnClickListener() {
+        btnFotosFaltantes.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (fu.hay_enviadas(getApplicationContext()) > 0) {
@@ -192,6 +199,30 @@ public class MenuPrincipal extends AppCompatActivity
                             , "No tiene verificaciones realizadas en este momento", Toast.LENGTH_LONG).show();
             }
         });
+
+        btnMapa.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (fu.hay_tareas(getApplicationContext()) > 0) {
+                    Intent i = new Intent(getApplicationContext(), MapaActivity.class);
+                    finish();
+                    startActivity(i);
+                } else
+                    Toast.makeText(getApplicationContext()
+                            , "No tiene verificaciones realizadas en este momento", Toast.LENGTH_LONG).show();
+            }
+        });
+
+        //FAB para pedir Tareas y Clientes
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                pedirTareas(id_user);
+                pedirClientes();
+            }
+        });
+
     }
 
 
@@ -254,16 +285,14 @@ public class MenuPrincipal extends AppCompatActivity
         return true;
     }
 
-    private ProgressDialog progressDialog;
+    private ProgressDialog progressDialogPedirTareas;
 
     private void pedirTareas(String usua) {
-
         // Añadir parámetro a la URL del web service
-        fu.delete_all(getApplicationContext());
         String newURL = VariablesURL.GET_TAREA + usua;
-        progressDialog = new ProgressDialog(MenuPrincipal.this);
-        progressDialog.setMessage("Descargando Tareas....");
-        progressDialog.show();
+        progressDialogPedirTareas = new ProgressDialog(MenuPrincipal.this);
+        progressDialogPedirTareas.setMessage("Descargando Tareas....");
+        progressDialogPedirTareas.show();
         // Realizar petición GET_BY_ID
         VolleySingleton.getInstance(getApplicationContext()).addToRequestQueue(
                 new JsonObjectRequest(
@@ -275,8 +304,12 @@ public class MenuPrincipal extends AppCompatActivity
                             @Override
                             public void onResponse(JSONObject response) {
                                 // Procesar respuesta Json
+                                //Elimina los datos que había
+                                fu.delete_all(getApplicationContext());
+                                //Elimina la fecha de la anterior actualización
+                                fu.delete_fecha(getApplicationContext());
                                 procesarRespuesta(response);
-                                progressDialog.dismiss();
+                                progressDialogPedirTareas.dismiss();
                             }
                         },
                         new Response.ErrorListener() {
@@ -284,12 +317,11 @@ public class MenuPrincipal extends AppCompatActivity
                             public void onErrorResponse(VolleyError error) {
                                 Log.d(TAG, "Error Volley en pedir Datos: " + error.getMessage());
                                 Toast.makeText(getApplicationContext(), "Error al Descargar las tareas, inténtelo más tarde...", Toast.LENGTH_LONG).show();
-                                progressDialog.dismiss();
+                                progressDialogPedirTareas.dismiss();
                             }
                         }
                 )
         );
-
     }
 
     /**
@@ -300,8 +332,18 @@ public class MenuPrincipal extends AppCompatActivity
      */
     private void procesarRespuesta(JSONObject response) {
         try {
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            f_actual = format.format(fechaYhora.getTime());
+
+            ContentValues values_fecha = new ContentValues();
             crearBD = new DBHelper(MenuPrincipal.this);
             db = crearBD.getWritableDatabase();
+
+            //Insertar Fecha actual
+            values_fecha.put("fecha", f_actual);
+            db.insert("f_actualizada", null, values_fecha);
+
+            //Insertar las tareas
             ContentValues values1 = new ContentValues();
             System.out.println("TAREAS ==============" + response.toString());
             String estado = response.getString("correcto");
@@ -309,10 +351,7 @@ public class MenuPrincipal extends AppCompatActivity
             if (estado.equals("1")) {
                 JSONArray mensaje = response.getJSONArray("verificaciones");
                 Tarea[] tarea = gson.fromJson(mensaje.toString(), Tarea[].class);
-
-
                 for (int i = 0; i < tarea.length; i++) {
-
                     values1.put("id_ver", tarea[i].getIdVer());
                     values1.put("tipo_verificacion", tarea[i].getTipoVerificacion());
                     values1.put("id_tipo", tarea[i].getIdtipo());
@@ -328,18 +367,18 @@ public class MenuPrincipal extends AppCompatActivity
                     values1.put("ub_longitud", tarea[i].getUbLongitud());
                     values1.put("medidor", tarea[i].getMedidor());
                     values1.put("vip", tarea[i].getVip());
+                    values1.put("f_asignacion", tarea[i].getF_asignacion());
 
                     Log.i("valor a base", values1.toString());
                     db.insert("tarea", null, values1);
 
                 }
                 Toast.makeText(getApplicationContext(), "Tareas descargadas exitosamente...", Toast.LENGTH_LONG).show();
+                //Luego de las tareas pide los formularios
                 verFormularios();
                 pushDB();
-                // db.insert("usuario_completo", null, values1);
             } else {
                 Toast.makeText(getApplicationContext(), "No tiene tareas asignadas en este momento...", Toast.LENGTH_LONG).show();
-
             }
             db.close();
         } catch (JSONException e) {
@@ -354,25 +393,22 @@ public class MenuPrincipal extends AppCompatActivity
         progressDialog2 = new ProgressDialog(MenuPrincipal.this);
         progressDialog2.setMessage("Descargando Formularios....");
         progressDialog2.show();
-        List<String> tareas = new ArrayList<>();
-        tareas = fu.get_tipo_cliente(getApplicationContext());
-        // Log.e("TAREAS A FORMULARIOS ",tareas.toString());
-
-        for (int i = 0; i < tareas.size(); i++) {
-            String[] datos = tareas.get(i).split("-");
+        //Obtiene todos los clientes para pedir sus formularios
+        List<String> lstTareas = new ArrayList<>();
+        lstTareas = fu.get_tipo_cliente(getApplicationContext());
+        for (int i = 0; i < lstTareas.size(); i++) {
+            String[] datos = lstTareas.get(i).split("-");
             String cliente = datos[0];
             String tipo = datos[1];
-
+            //Pedir Formularios
             pedirFormularios(cliente, tipo);
         }
         progressDialog2.dismiss();
     }
 
     private void pedirFormularios(String cliente, String tipo) {
-
         // Añadir parámetro a la URL del web service
         String newURL = VariablesURL.GET_FORM + tipo + "&cliente=" + cliente;
-
         // Realizar petición GET_BY_ID
         VolleySingleton.getInstance(getApplicationContext()).addToRequestQueue(
                 new JsonObjectRequest(
@@ -415,11 +451,6 @@ public class MenuPrincipal extends AppCompatActivity
             JSONArray mensaje = response.getJSONArray("formularios");
 
             Formulario[] form = gson.fromJson(mensaje.toString(), Formulario[].class);
-
-            //   adapter = new TareaAdapter(Arrays.asList(tarea),getApplicationContext());
-
-            // lista.setAdapter(adapter);
-
             for (int i = 0; i < form.length; i++) {
 
                 values1.put("id", form[i].getId());
@@ -434,7 +465,6 @@ public class MenuPrincipal extends AppCompatActivity
                 values1.put("idopciones", form[i].getIdopciones());
                 values1.put("dependientes", form[i].getDependientes());
                 values1.put("visible", form[i].getVisible());
-
                 //Log.i("valor a base", values1.toString());
                 db.insert("formulario", null, values1);
             }
@@ -447,12 +477,12 @@ public class MenuPrincipal extends AppCompatActivity
         }
     }
 
+    //Clase para hacer Backup de la BD del celular en un lugar público e caso de problemas
     private void pushDB() {
         try {
             File sdCard = Environment.getExternalStorageDirectory();
             File directory = new File(sdCard.getAbsolutePath());
             File data = Environment.getDataDirectory();
-
             if (directory.canWrite()) {
                 String currentDBPath = "/data/data/" + getPackageName() + "/databases/bigsomer_bd.sqlite";
                 String backupDBPath = "todo.db";
@@ -473,7 +503,6 @@ public class MenuPrincipal extends AppCompatActivity
     }
 
     private void pedirClientes() {
-
         // Añadir parámetro a la URL del web service
         String newURL = VariablesURL.GET_CLI;
         // Realizar petición GET_BY_ID
@@ -499,7 +528,6 @@ public class MenuPrincipal extends AppCompatActivity
                         }
                 )
         );
-
     }
 
     private void procesarRespuestaCliente(JSONObject response) {
@@ -511,34 +539,26 @@ public class MenuPrincipal extends AppCompatActivity
             JSONArray mensaje = response.getJSONArray("clientes");
 
             Cliente[] cli = gson.fromJson(mensaje.toString(), Cliente[].class);
-
-            //   adapter = new TareaAdapter(Arrays.asList(tarea),getApplicationContext());
-
-            // lista.setAdapter(adapter);
-
             for (int i = 0; i < cli.length; i++) {
 
                 values1.put("id_cli", cli[i].getId_cli());
                 values1.put("cliente", cli[i].getCliente());
                 values1.put("acceso", cli[i].getAcceso());
 
-                //Log.i("valor a base", values1.toString());
                 db.insert("cliente", null, values1);
             }
-            // Toast.makeText(getApplicationContext(),"Formularios descargados exitosamente...",Toast.LENGTH_LONG).show();
             pushDB();
-            // db.insert("usuario_completo", null, values1);
             db.close();
         } catch (JSONException e) {
             Log.d(TAG, e.getMessage());
         }
     }
 
-
+//Sicronizar los Pendientes
     public void sincronizarPendientes() {
-
         crearBD = new DBHelper(MenuPrincipal.this);
         db = crearBD.getWritableDatabase();
+        //Obtener de la base de datos del celular todos los que tiene estado "pendiente"
         String[] user = new String[]{"pendiente"};
         Cursor fila = db.rawQuery("SELECT * FROM formulario_respuestas WHERE estado =?", user);
         if (fila.moveToFirst()) {
@@ -554,21 +574,10 @@ public class MenuPrincipal extends AppCompatActivity
                 respuestas = fila.getString(8);
 
                 String[] v_respuestas = {id_fr, lat, lon, fecha_realizada, tipo_ver, acceso_cliente, fotos, firma, respuestas};
-                lst_respuestas.add(v_respuestas);
-                // Log.e("SITU: ", respuestas);
-                //  enviarPendientes();
+                lstRespuestas.add(v_respuestas);
             } while (fila.moveToNext());
-
-            //      Intent i = new Intent(getApplicationContext(), MenuPrincipal.class);
-            //       finish();
-            //      startActivity(i);
         } else {
-           // Toast.makeText(getApplicationContext(), "No hay tareas positivas a sincronizar por el momento", Toast.LENGTH_LONG).show();
         }
-            /*Intent i = new Intent(getApplicationContext(), MenuPrincipal.class);
-            finish();
-            startActivity(i);
-            db.close();*/
         Cursor fila2 = db.rawQuery("SELECT * FROM formulario_negativas WHERE estado =?", user);
         if (fila2.moveToFirst()) {
             do {
@@ -585,108 +594,36 @@ public class MenuPrincipal extends AppCompatActivity
                 comentarios = fila2.getString(10);
 
                 String[] v_negativas = {id_fr, lat, lon, fecha_realizada, tipo_ver, acceso_cliente, fotos, nombre, ci, cargo, comentarios};
-                lst_negativas.add(v_negativas);
-
-                //     Log.e("SITU: ", respuestas);
-                //enviarPendientesNegativas();
+                lstNegativas.add(v_negativas);
             } while (fila2.moveToNext());
-
-
         } else {
-            //           Toast.makeText(getApplicationContext(), "No hay tareas negativas a sincronizar por el momento", Toast.LENGTH_LONG).show();
         }
-
-        if(!lst_respuestas.isEmpty()){
+        if(!lstRespuestas.isEmpty()){
             new Guardar_Pendientes().execute();
         }else
-        if(!lst_negativas.isEmpty())
+        if(!lstNegativas.isEmpty())
         {
             new Guardar_Negativas().execute();
         }else
         {
             Toast.makeText(getApplicationContext(),"No hay verificaciones a ser sincronizadas",Toast.LENGTH_LONG).show();
         }
-
     }
 
-    /*
-        public void sincronizarPendientes(){
-
-            crearBD = new DBHelper(MenuPrincipal.this);
-            db = crearBD.getWritableDatabase();
-            String[] user = new String[]{"pendiente"};
-            Cursor fila = db.rawQuery("SELECT * FROM formulario_respuestas WHERE estado =?", user);
-            if (fila.moveToFirst()) {
-                do {
-                    id_fr=fila.getString(0);
-                    lat=fila.getString(1);
-                    lon=fila.getString(2);
-                    fecha_realizada=fila.getString(3);
-                    tipo_ver=fila.getString(4);
-                    acceso_cliente=fila.getString(5);
-                    fotos=fila.getString(6);
-                    respuestas=fila.getString(7);
-
-                    Log.e("SITU: ", respuestas);
-                    enviarPendientes();
-                } while (fila.moveToNext());
-
-               Intent i = new Intent(getApplicationContext(), MenuPrincipal.class);
-             /   finish();
-                startActivity(i);
-
-            } else {
-
-                Toast.makeText(getApplicationContext(),"No hay tareas positivas a sincronizar por el momento", Toast.LENGTH_LONG).show();
-            }
-
-            Cursor fila2 = db.rawQuery("SELECT * FROM formulario_negativas WHERE estado =?", user);
-            if (fila2.moveToFirst()) {
-                do {
-                    id_fr=fila2.getString(0);
-                    lat=fila2.getString(1);
-                    lon=fila2.getString(2);
-                    fecha_realizada=fila2.getString(3);
-                    tipo_ver=fila2.getString(4);
-                    acceso_cliente=fila2.getString(5);
-                    fotos=fila2.getString(6);
-                    nombre=fila2.getString(7);
-                    ci=fila2.getString(8);
-                    cargo=fila2.getString(9);
-                    comentarios=fila2.getString(10);
-
-                    Log.e("SITU: ", respuestas);
-                    enviarPendientesNegativas();
-                } while (fila2.moveToNext());
-
-                Intent i = new Intent(getApplicationContext(), MenuPrincipal.class);
-                finish();
-                startActivity(i);
-
-            } else {
-
-                Toast.makeText(getApplicationContext(),"No hay tareas positivas a sincronizar por el momento", Toast.LENGTH_LONG).show();
-            }
-
-
-        }*/
     private String resultado = "problemas";
-    private ProgressDialog progressDialogP, progressF;
-
+    private ProgressDialog progressDialogGuardarPendientes;
     class Guardar_Pendientes extends AsyncTask<String, String, String> {
         protected void onPreExecute() {
             super.onPreExecute();
-            progressDialogP = new ProgressDialog(MenuPrincipal.this);
-            progressDialogP.setMessage("Enviando datos...");
-            progressDialogP.setIndeterminate(false);
-            progressDialogP.setCancelable(false);
-            progressDialogP.show();
+            progressDialogGuardarPendientes = new ProgressDialog(MenuPrincipal.this);
+            progressDialogGuardarPendientes.setMessage("Enviando datos...");
+            progressDialogGuardarPendientes.setIndeterminate(false);
+            progressDialogGuardarPendientes.setCancelable(false);
+            progressDialogGuardarPendientes.show();
         }
 
         protected String doInBackground(String... args) {
-            //   enviar_positivas=lst_respuestas.get(index);
-
-            for (String[] enviar_positivas : lst_respuestas) {
+            for (String[] enviar_positivas : lstRespuestas) {
                 HashMap<String, String> map = new HashMap<>();// Mapeo previo
 
                 map.put("id_ver", enviar_positivas[0]);
@@ -723,9 +660,6 @@ public class MenuPrincipal extends AppCompatActivity
                     List<String> lst_fotos = Arrays.asList(sfotos.split(", "));
 
                     Log.e("SITU FOTOS", lst_fotos.toString());
-                    //   progressF = new ProgressDialog(MenuPrincipal.this);
-                    //  progressF.setMessage("Enviando Fotos de la Verificación Nro. "+enviar_positivas[0]+", por favor espere ....");
-                    //  progressF.show();
                     try {
                         StrictMode.ThreadPolicy policyf = new StrictMode.ThreadPolicy.Builder()
                                 .permitAll().build();
@@ -736,7 +670,6 @@ public class MenuPrincipal extends AppCompatActivity
                         HttpPost httppostf = new HttpPost(VariablesURL.INSERT_FOTOS);
                         MultipartEntityBuilder entityBuilderf = MultipartEntityBuilder.create();
                         entityBuilderf.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
-
 
                         //SUBIR LAS FOTOS
                         try {
@@ -793,11 +726,11 @@ public class MenuPrincipal extends AppCompatActivity
         }
 
         protected void onPostExecute(String file_url) {
-            progressDialogP.dismiss();
+            progressDialogGuardarPendientes.dismiss();
 
             if (resultado.equals("ok")) {
                 Toast.makeText(getApplicationContext(), "Datos de verificación Guardados", Toast.LENGTH_SHORT).show();
-                if (!lst_negativas.isEmpty())
+                if (!lstNegativas.isEmpty())
                     new Guardar_Negativas().execute();
                 else {
                     Intent a = new Intent(getApplicationContext(), MenuPrincipal.class);
@@ -817,17 +750,16 @@ public class MenuPrincipal extends AppCompatActivity
     class Guardar_Negativas extends AsyncTask<String, String, String> {
         protected void onPreExecute() {
             super.onPreExecute();
-            progressDialogP = new ProgressDialog(MenuPrincipal.this);
-            progressDialogP.setMessage("Enviando datos...");
-            progressDialogP.setIndeterminate(false);
-            progressDialogP.setCancelable(false);
-            progressDialogP.show();
+            progressDialogGuardarPendientes = new ProgressDialog(MenuPrincipal.this);
+            progressDialogGuardarPendientes.setMessage("Enviando datos...");
+            progressDialogGuardarPendientes.setIndeterminate(false);
+            progressDialogGuardarPendientes.setCancelable(false);
+            progressDialogGuardarPendientes.show();
         }
 
         protected String doInBackground(String... args) {
-            //   enviar_positivas=lst_respuestas.get(index);
             resultado2 = "problemas";
-            for (String[] enviar_negativas : lst_negativas) {
+            for (String[] enviar_negativas : lstNegativas) {
                 HashMap<String, String> map = new HashMap<>();// Mapeo previo
 
                 map.put("id_ver", enviar_negativas[0]);
@@ -924,7 +856,7 @@ public class MenuPrincipal extends AppCompatActivity
         }
 
         protected void onPostExecute(String file_url) {
-            progressDialogP.dismiss();
+            progressDialogGuardarPendientes.dismiss();
 
             if (resultado2.equals("ok")) {
                 Toast.makeText(getApplicationContext(), "Datos de verificación negativa Guardados", Toast.LENGTH_SHORT).show();
@@ -942,12 +874,14 @@ public class MenuPrincipal extends AppCompatActivity
 
     private ProgressDialog progressDialogN;
 
+    //Este no me acuerdo para que lo necesitaba
+    //Mejor no lo borro...
     public void enviarPendientesNegativas() {
         //    progressDialogN = new ProgressDialog(MenuPrincipal.this);
         //   progressDialogN.setMessage("Enviando Verificación "+id_fr+" ....");
         //    progressDialogN.show();
 
-        for (String[] enviar_negativas : lst_negativas) {
+        for (String[] enviar_negativas : lstNegativas) {
 
             HashMap<String, String> map = new HashMap<>();// Mapeo previo
 
@@ -1012,7 +946,6 @@ public class MenuPrincipal extends AppCompatActivity
 
 
     private void procesarRespuestaN(JSONObject response) {
-
         try {
             // Obtener estado
             String estado = response.getString("estado");
@@ -1021,15 +954,11 @@ public class MenuPrincipal extends AppCompatActivity
 
             switch (estado) {
                 case "1":
-
                     Log.e("SITU ENVIAR: ", "BIEN");
-
                     break;
-
                 case "2":
                     // Mostrar mensaje
                     Log.e("SITU ENVIAR: ", "MAL");
-
                     break;
             }
             if (!fotos.equals("[]")) {

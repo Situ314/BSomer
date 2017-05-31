@@ -75,8 +75,8 @@ Adaptador del recycler view
     }
 
     public void cargarLista(String ac){
+        //Obtener las tareas por cliente
         List<Tarea> tareas = fu.llenar_tarea(getApplicationContext(),ac);
-        //Log.e("AQUIIIII",tareas[0].getIdVer());
         adapter = new TareaAdapter(tareas,getApplicationContext());
         lista.setAdapter(adapter);
 

@@ -47,30 +47,21 @@ import java.util.StringTokenizer;
 public class Funciones {
 
     public String Retornar_usuario(Context context, String usuario, String contrasenhia) {
-
         DBHelper admin = new DBHelper(context);
         SQLiteDatabase bd = admin.getWritableDatabase();
-
-
         String[] user = new String[]{usuario, contrasenhia};
         String mostrar = "";
         Cursor fila = bd.rawQuery("SELECT id_usuario FROM bisa_usuario WHERE nombre_usuario=? AND password=?", user);
         if (fila.moveToFirst()) {
             do {
                 mostrar = "" + fila.getInt(0);
-
             } while (fila.moveToNext());
-
-
             bd.close();
             return mostrar;
         } else {
             bd.close();
-
             return "no";
         }
-
-
     }
 
     public String consulta_hay_usuarios(Context context, String nulo) {
@@ -78,33 +69,23 @@ public class Funciones {
         DBHelper admin = new DBHelper(context);
         SQLiteDatabase bd = admin.getWritableDatabase();
 
-        //id_usuario, nombre_usuario varchar, password varchar, nombres varchar,  apellido_1 varchar,
-        // apellido_2 varchar,ciudad varchar, ci varchar, telefono varchar
-
         String[] user = new String[]{nulo};
         Cursor fila = bd.rawQuery("SELECT * FROM bisa_usuario WHERE id_usuario !=?", user);
         if (fila.moveToFirst()) {
-
             bd.close();
             return "si";
         } else {
             bd.close();
-
             return "no";
         }
-
     }
 
     public List<String> DomsinFoto(Context context, String usuario) {
         List<String> domList = new ArrayList<String>();
-        // Select All Query
-
         DBHelper admin = new DBHelper(context);
         SQLiteDatabase bd = admin.getWritableDatabase();
 
         String[] user = new String[]{usuario};
-        //id_usuario, nombre_usuario varchar, password varchar, nombres varchar,  apellido_1 varchar,
-        // apellido_2 varchar,ciudad varchar, ci varchar, telefono varchar
         Cursor cursor = bd.rawQuery("SELECT * FROM usuario_completo", null);
 
         // looping through all rows and adding to list
@@ -132,32 +113,24 @@ public class Funciones {
         DBHelper admin = new DBHelper(context);
         SQLiteDatabase bd = admin.getWritableDatabase();
 
-
         String[] user = new String[]{nulo};
         String mostrar = "";
         Cursor fila = bd.rawQuery("SELECT id_usuario FROM usuario_completo WHERE id_usuario !=?", user);
         if (fila.moveToFirst()) {
             do {
                 mostrar = "" + fila.getString(0);
-
             } while (fila.moveToNext());
-
-
             return mostrar;
         } else {
             bd.close();
-
             return "no";
         }
-
     }
 
 
     public int hay_tareas(Context context) {
         DBHelper admin = new DBHelper(context);
         SQLiteDatabase bd = admin.getWritableDatabase();
-
-
         String[] cl = new String[]{"0"};
         int mostrar = 0;
         int contador = 0;
@@ -167,18 +140,15 @@ public class Funciones {
             do {
                 mostrar = fila.getInt(0);
                 contador = contador + 1;
-
             } while (fila.moveToNext());
         }
         bd.close();
         return contador;
     }
 
-
     public int hay_enviadas(Context context) {
         DBHelper admin = new DBHelper(context);
         SQLiteDatabase bd = admin.getWritableDatabase();
-
 
         String[] cl = new String[]{"0"};
         int mostrar = 0;
@@ -189,7 +159,6 @@ public class Funciones {
             do {
                 mostrar = fila.getInt(0);
                 contador = contador + 1;
-
             } while (fila.moveToNext());
         }
         bd.close();
@@ -200,7 +169,6 @@ public class Funciones {
         DBHelper admin = new DBHelper(context);
         SQLiteDatabase bd = admin.getWritableDatabase();
         String contador="";
-
 
         String[] user = new String[]{acceso_cliente, tipo_ver};
         Cursor fila = bd.rawQuery("SELECT n_foto_negativa FROM formulario WHERE acceso=? AND tipo_verificacion=?", user);
@@ -229,10 +197,8 @@ public class Funciones {
                 "AND id_ver NOT IN (SELECT id_fr FROM formulario_negativas)", cl);
         if (fila.moveToFirst()) {
             do {
-
                 mostrar = fila.getInt(0);
                 contador = contador + 1;
-
             } while (fila.moveToNext());
         }
         bd.close();
@@ -279,14 +245,11 @@ public class Funciones {
         String[] cl = new String[]{cliente};
         int mostrar = 0;
         int contador = 0;
-
         Cursor fila = bd.rawQuery("SELECT * FROM formulario_respuestas WHERE acceso_cliente=?", cl);
         if (fila.moveToFirst()) {
             do {
-
                 mostrar = fila.getInt(0);
                 contador = contador + 1;
-
             } while (fila.moveToNext());
         }
         bd.close();
@@ -300,14 +263,11 @@ public class Funciones {
         String[] cl = new String[]{cliente};
         int mostrar = 0;
         int contador = 0;
-
         Cursor fila = bd.rawQuery("SELECT * FROM formulario_negativas WHERE acceso_cliente=?", cl);
         if (fila.moveToFirst()) {
             do {
-
                 mostrar = fila.getInt(0);
                 contador = contador + 1;
-
             } while (fila.moveToNext());
         }
         bd.close();
@@ -317,7 +277,6 @@ public class Funciones {
     public int hay_tareas_pendientes(Context context) {
         DBHelper admin = new DBHelper(context);
         SQLiteDatabase bd = admin.getWritableDatabase();
-
 
         String[] cl = new String[]{"pendiente"};
         int mostrar = 0;
@@ -337,7 +296,6 @@ public class Funciones {
     public int hay_negativas_pendientes(Context context) {
         DBHelper admin = new DBHelper(context);
         SQLiteDatabase bd = admin.getWritableDatabase();
-
 
         String[] cl = new String[]{"pendiente"};
         int mostrar = 0;
@@ -370,7 +328,6 @@ public class Funciones {
 
 
     public Formulario getFormulario(String id, List<Formulario> lst){
-
         Formulario f=null;
         for(int i = 0; i < lst.size(); i++){
             if(lst.get(i).getId().equals(id))
@@ -382,7 +339,6 @@ public class Funciones {
     public String get_nombre_direccion(Context context,String id) {
         DBHelper admin = new DBHelper(context);
         SQLiteDatabase bd = admin.getWritableDatabase();
-
 
         String[] cl = new String[]{id};
         String devolver="";
@@ -401,7 +357,6 @@ public class Funciones {
         DBHelper admin = new DBHelper(context);
         SQLiteDatabase bd = admin.getWritableDatabase();
 
-
         String[] cl = new String[]{""};
         int mostrar = 0;
         int contador = 0;
@@ -409,7 +364,6 @@ public class Funciones {
         Cursor fila = bd.rawQuery("SELECT * from usuario_completo", null);
         if (fila.moveToFirst()) {
             do {
-
                 u.setId_usuario(fila.getString(0));
                 u.setNombre_usuario(fila.getString(1));
                 u.setPassword(fila.getString(2));
@@ -419,7 +373,6 @@ public class Funciones {
                 u.setCiudad(fila.getString(6));
                 u.setCi(fila.getString(7));
                 u.setTelefono(fila.getString(8));
-
             } while (fila.moveToNext());
         }
         bd.close();
@@ -470,6 +423,7 @@ public class Funciones {
                 tarea[i].setUbLongitud(fila.getString(13));
                 tarea[i].setMedidor(fila.getString(14));
                 tarea[i].setVip(fila.getString(15));
+                tarea[i].setF_asignacion(fila.getString(16));
 
                 tareas.add(tarea[i]);
                 i++;
@@ -479,7 +433,6 @@ public class Funciones {
             return tareas;
         } else {
             bd.close();
-
             return null;
         }
 
@@ -498,7 +451,6 @@ public class Funciones {
         Cursor fila = bd.rawQuery("SELECT * FROM formulario_respuestas WHERE acceso_cliente =?", user);
         if (fila.moveToFirst()) {
             do {
-
                 tarea[i] = new Respuesta();
                 tarea[i].setId(fila.getString(0));
                 tarea[i].setLat(fila.getString(1));
@@ -514,14 +466,52 @@ public class Funciones {
                 i++;
 
             } while (fila.moveToNext());
-
             return tareas;
         } else {
             bd.close();
-
             return null;
         }
+    }
 
+    public List<Tarea> getTareas(Context context) {
+
+        DBHelper admin = new DBHelper(context);
+        SQLiteDatabase bd = admin.getWritableDatabase();
+
+        int i = 0;
+        List<Tarea> tareas = new ArrayList<Tarea>();
+        Tarea[] tarea = new Tarea[100];
+        String mostrar = "";
+        Cursor fila = bd.rawQuery("SELECT * FROM tarea WHERE id_ver NOT IN (SELECT id_fr FROM formulario_respuestas) AND id_ver NOT IN (SELECT id_fr FROM formulario_negativas)", null);
+        if (fila.moveToFirst()) {
+            do {
+                tarea[i] = new Tarea();
+                tarea[i].setIdVer(fila.getString(0));
+                tarea[i].setTipoVerificacion(fila.getString(1));
+                tarea[i].setIdtipo(fila.getString(2));
+                tarea[i].setSolicitante(fila.getString(3));
+                tarea[i].setNombre(fila.getString(4));
+                tarea[i].setCi(fila.getString(5));
+                tarea[i].setDireccion(fila.getString(6));
+                tarea[i].setZona(fila.getString(7));
+                tarea[i].setNombreEmpresa(fila.getString(9));
+                tarea[i].setCliente(fila.getString(10));
+                tarea[i].setReferencias(fila.getString(11));
+                tarea[i].setUbLatitud(fila.getString(12));
+                tarea[i].setUbLongitud(fila.getString(13));
+                tarea[i].setMedidor(fila.getString(14));
+                tarea[i].setVip(fila.getString(15));
+                tarea[i].setF_asignacion(fila.getString(16));
+
+                tareas.add(tarea[i]);
+                i++;
+
+            } while (fila.moveToNext());
+            return tareas;
+        } else {
+            bd.close();
+            return null;
+        }
     }
 
     public List<Respuesta> get_todo_respuestas(Context context) {
@@ -535,7 +525,6 @@ public class Funciones {
         Cursor fila = bd.rawQuery("SELECT * FROM formulario_respuestas", null);
         if (fila.moveToFirst()) {
             do {
-
                 tarea[i] = new Respuesta();
                 tarea[i].setId(fila.getString(0));
                 tarea[i].setLat(fila.getString(1));
@@ -551,11 +540,9 @@ public class Funciones {
                 i++;
 
             } while (fila.moveToNext());
-
             return tareas;
         } else {
             bd.close();
-
             return null;
         }
 
@@ -572,7 +559,6 @@ public class Funciones {
         Cursor fila = bd.rawQuery("SELECT * FROM formulario_respuestas", null);
         if (fila.moveToFirst()) {
             do {
-
                 String []comparar = fila.getString(3).split(" ");
                 String fecha_verif = comparar[0];
                 Log.e("SITU FECHA: ",fecha_verif);
@@ -581,7 +567,6 @@ public class Funciones {
                 try {
                    // Date date_consulta = sdf.parse(fecha);
                     Date date_verif = sdf.parse(fecha_verif);
-
                     if (date_verif.after(fecha) || date_verif.equals(fecha)){
                         tarea[i] = new Respuesta();
                         tarea[i].setId(fila.getString(0));
@@ -600,16 +585,12 @@ public class Funciones {
                 } catch (ParseException e) {
                     e.printStackTrace();
                 }
-
             } while (fila.moveToNext());
-
             return tareas;
         } else {
             bd.close();
-
             return tareas;
         }
-
     }
 
     public List<Respuesta> get_xId(Context context, String Id) {
@@ -638,11 +619,9 @@ public class Funciones {
                         tareas.add(tarea[i]);
                         i++;
             } while (fila.moveToNext());
-
             return tareas;
         } else {
             bd.close();
-
             return tareas;
         }
 
@@ -654,7 +633,6 @@ public class Funciones {
             if(o.getID().equals(value))
                 nombre = o;
         }
-
         return nombre;
     }
 
@@ -684,16 +662,12 @@ public class Funciones {
                         list.add(jsonArray.get(j).toString());
                     }
                 }
-
             } while (fila.moveToNext());
-
             return list;
         } else {
             bd.close();
-
             return null;
         }
-
     }
 
     public ArrayList<String> get_respuesta_negativas(Context context, String verif) {
@@ -709,8 +683,6 @@ public class Funciones {
         Cursor fila = bd.rawQuery("SELECT respuestas FROM formulario_negativas WHERE id_fr =?", user);
         if (fila.moveToFirst()) {
             do {
-
-
             } while (fila.moveToNext());
 
             return list;
@@ -734,16 +706,12 @@ public class Funciones {
         if (fila.moveToFirst()) {
             do {
                    fotos = fila.getString(0);
-
             } while (fila.moveToNext());
-
             return fotos;
         } else {
             bd.close();
-
             return null;
         }
-
     }
 
     public String get_visible(Context context, String verif) {
@@ -758,13 +726,10 @@ public class Funciones {
         if (fila.moveToFirst()) {
             do {
                 visible = fila.getString(0);
-
             } while (fila.moveToNext());
-
             return visible;
         } else {
             bd.close();
-
             return null;
         }
 
@@ -774,15 +739,11 @@ public class Funciones {
                                     Bitmap.CompressFormat format, int quality) {
 
         File imageFile = new File(dir,fileName);
-
         FileOutputStream fos = null;
         try {
             fos = new FileOutputStream(imageFile);
-
             bm.compress(format,quality,fos);
-
             fos.close();
-
             return true;
         }
         catch (IOException e) {
@@ -799,24 +760,19 @@ public class Funciones {
     }
 
     public boolean check_connection(Context context){
-
         boolean check = false;
         Bitmap bm = BitmapFactory.decodeResource(context.getResources(), R.drawable.test);
-
         File dir = new File(Environment.getExternalStorageDirectory() + File.separator + "drawable");
-
         boolean doSave = true;
         if (!dir.exists()) {
             doSave = dir.mkdirs();
         }
-
         if (doSave) {
             saveBitmapToFile(dir,"test.png",bm,Bitmap.CompressFormat.PNG,100);
         }
         else {
             Log.e("app","Couldn't create target directory.");
         }
-
          StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder()
                 .permitAll().build();
         StrictMode.setThreadPolicy(policy);
@@ -855,7 +811,6 @@ public class Funciones {
 
         DBHelper admin = new DBHelper(context);
         SQLiteDatabase bd = admin.getWritableDatabase();
-
         int i = 0;
         String fotos="";
         String[] user = new String[]{verif};
@@ -923,6 +878,30 @@ public class Funciones {
 
         bd.delete("tarea",null,null);
         bd.close();
+    }
+
+    public void delete_fecha(Context context){
+        DBHelper admin = new DBHelper(context);
+        SQLiteDatabase bd = admin.getWritableDatabase();
+
+        bd.delete("f_actualizada",null,null);
+        bd.close();
+    }
+
+    public String get_fecha_actualizada(Context context) {
+
+        DBHelper admin = new DBHelper(context);
+        SQLiteDatabase bd = admin.getWritableDatabase();
+        String fecha="nada";
+        Cursor fila = bd.rawQuery("SELECT fecha from f_actualizada", null);
+        if (fila.moveToFirst()) {
+            do {
+                fecha = fila.getString(0);
+            } while (fila.moveToNext());
+        }
+        bd.close();
+        return fecha;
+
     }
 
     public List<String> get_tipo_cliente(Context context) {

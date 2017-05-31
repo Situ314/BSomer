@@ -4,7 +4,6 @@ import android.app.DatePickerDialog;
 import android.app.Dialog;
 import android.app.FragmentManager;
 import android.app.ProgressDialog;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.StrictMode;
@@ -26,9 +25,7 @@ import android.widget.Toast;
 import com.example.jeancarla.bigsomer.DateDialog;
 import com.example.jeancarla.bigsomer.R;
 import com.example.jeancarla.bigsomer.adapters.FotoAdapter;
-import com.example.jeancarla.bigsomer.adapters.TareaAdapter;
 import com.example.jeancarla.bigsomer.classes.Respuesta;
-import com.example.jeancarla.bigsomer.classes.Tarea;
 import com.example.jeancarla.bigsomer.helpers.Funciones;
 import com.example.jeancarla.bigsomer.helpers.VariablesURL;
 
@@ -46,7 +43,6 @@ import org.apache.http.util.EntityUtils;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -54,16 +50,16 @@ public class Fotos_Faltantes extends AppCompatActivity implements DatePickerDial
 
     List<Respuesta> lista_mal = new ArrayList<>();
     List<Respuesta> lista = new ArrayList<>();
-    Respuesta anadir;
-    Dialog dialog_principal, dialog;
-    Button dtodo, dxfecha, dxid;
+    Respuesta rspAnadir;
+    Dialog dialogIncial, dialogBuscarId;
+    Button btnDialogTodo, btnDialogFecha, btnDialogId;
     Funciones fu=new Funciones();
     String enviar_id, enviar_cliente, enviar_fecha;
     private FotoAdapter adapter;
     /*
     Instancia global del recycler view
      */
-    private RecyclerView recyclerlista;
+    private RecyclerView recyclerLstFotosFaltantes;
 
     /*
     instancia global del administrador
@@ -75,28 +71,30 @@ public class Fotos_Faltantes extends AppCompatActivity implements DatePickerDial
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_fotos__faltantes);
 
-        dialog_principal = new Dialog(Fotos_Faltantes.this);
-        dialog_principal.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        dialog_principal.setContentView(R.layout.dialog_opcionesfotos);
-        dialog_principal.show();
+        //Mostrar diálogo para que el usuario elija
+        //entre elegir ID,Fecha o TODO
+        dialogIncial = new Dialog(Fotos_Faltantes.this);
+        dialogIncial.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialogIncial.setContentView(R.layout.dialog_opcionesfotos);
+        dialogIncial.show();
 
-        recyclerlista = (RecyclerView) findViewById(R.id.lst_tarea);
+        recyclerLstFotosFaltantes = (RecyclerView) findViewById(R.id.lst_tarea);
         // Usar un administrador para LinearLayout
         lManager = new LinearLayoutManager(getApplicationContext());
-        recyclerlista.setLayoutManager(lManager);
+        recyclerLstFotosFaltantes.setLayoutManager(lManager);
 
-        dtodo = (Button) dialog_principal.findViewById(R.id.xtodas);
-        dxfecha = (Button) dialog_principal.findViewById(R.id.xfecha);
-        dxid = (Button) dialog_principal.findViewById(R.id.xid);
+        btnDialogTodo = (Button) dialogIncial.findViewById(R.id.xtodas);
+        btnDialogFecha = (Button) dialogIncial.findViewById(R.id.xfecha);
+        btnDialogId = (Button) dialogIncial.findViewById(R.id.xid);
 
-        dtodo.setOnClickListener(new View.OnClickListener() {
+        btnDialogTodo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 cargarTodo();
             }
         });
 
-        dxfecha.setOnClickListener(new View.OnClickListener() {
+        btnDialogFecha.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 try {
@@ -107,7 +105,7 @@ public class Fotos_Faltantes extends AppCompatActivity implements DatePickerDial
             }
         });
 
-        dxid.setOnClickListener(new View.OnClickListener() {
+        btnDialogId.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 cargarxId();
@@ -116,6 +114,7 @@ public class Fotos_Faltantes extends AppCompatActivity implements DatePickerDial
 
         setToolbar();
     }
+
     private void setToolbar() {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -134,14 +133,16 @@ public class Fotos_Faltantes extends AppCompatActivity implements DatePickerDial
         return true;
     }
 
+    //Verifica TODAS las tareas guardadas en el celular
     public void cargarTodo(){
 
         lista = fu.get_todo_respuestas(getApplicationContext());
-        dialog_principal.dismiss();
+        dialogIncial.dismiss();
         new GetSinFotos().execute();
 
     }
 
+    //Verifica desde una FECHA dada
     private String fecha="2016-12-20";
     private Date date_elegida;
     public void cargarxFecha() throws ParseException {
@@ -151,7 +152,7 @@ public class Fotos_Faltantes extends AppCompatActivity implements DatePickerDial
 
     @Override
     public void onDateSet(DatePicker objPicker, int year, int monthOfYear, int dayOfMonth) {
-        // open your second dialog or do anything you want
+        // open your second dialogo or do anything you want
         fecha = year +"-"+ (monthOfYear+1)+"-"+dayOfMonth;
         Log.e("SITU: ","ENTROOOOOOOOO");
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -174,21 +175,23 @@ public class Fotos_Faltantes extends AppCompatActivity implements DatePickerDial
         new GetSinFotos().execute();
 
         Log.e("SITU LISTA: ", lista.toString());
-        dialog_principal.dismiss();
+        dialogIncial.dismiss();
     }
 
+    //Veririca por ID
     private String id;
     public void cargarxId(){
 
-        dialog = new Dialog(Fotos_Faltantes.this);
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        dialog.setContentView(R.layout.dialog_dep);
-        dialog.show();
+        //Lanza un diálogo para introducir el ID
+        dialogBuscarId = new Dialog(Fotos_Faltantes.this);
+        dialogBuscarId.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        dialogBuscarId.setContentView(R.layout.dialog_dep);
+        dialogBuscarId.show();
 
-        TextView tv_titulo = (TextView) dialog.findViewById(R.id.pregunta);
-        EditText et_id = (EditText) dialog.findViewById(R.id.respuesta);
-        Button enviar = (Button) dialog.findViewById(R.id.enviar_boton);
-        Button cancelar = (Button) dialog.findViewById(R.id.cancelar_boton);
+        TextView tv_titulo = (TextView) dialogBuscarId.findViewById(R.id.pregunta);
+        EditText et_id = (EditText) dialogBuscarId.findViewById(R.id.respuesta);
+        Button enviar = (Button) dialogBuscarId.findViewById(R.id.enviar_boton);
+        Button cancelar = (Button) dialogBuscarId.findViewById(R.id.cancelar_boton);
 
         tv_titulo.setText("Elija que verificación desea buscar");
         id = et_id.getText().toString();
@@ -206,8 +209,8 @@ public class Fotos_Faltantes extends AppCompatActivity implements DatePickerDial
                 }else
                 new GetSinFotos().execute();
 
-                dialog.dismiss();
-                dialog_principal.dismiss();
+                dialogBuscarId.dismiss();
+                dialogIncial.dismiss();
 
             }
         });
@@ -215,13 +218,14 @@ public class Fotos_Faltantes extends AppCompatActivity implements DatePickerDial
         cancelar.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                dialog.dismiss();
+                dialogBuscarId.dismiss();
             }
         });
 
     }
 
     private ProgressDialog pDialog1;
+    //Envía los ID seleccionados y devuelve una lista con los que le faltan alguna foto
     class GetSinFotos extends AsyncTask<String, String, String>{
 
         protected void onPreExecute(){
@@ -247,7 +251,7 @@ public class Fotos_Faltantes extends AppCompatActivity implements DatePickerDial
 
             for(int i = 0; i < lista.size(); i++) {
 
-                anadir = lista.get(i);
+                rspAnadir = lista.get(i);
                 enviar_cliente = lista.get(i).getAcceso_cliente();
                 enviar_id = lista.get(i).getId();
                 enviar_fecha = lista.get(i).getFecha_realizada();
@@ -267,7 +271,7 @@ public class Fotos_Faltantes extends AppCompatActivity implements DatePickerDial
 
                     Log.e("SITU RESPUESTA ", respuestaWeb);
                     if (!respuestaWeb.equals("BIEN")) {
-                        lista_mal.add(anadir);
+                        lista_mal.add(rspAnadir);
                     }
 
                 } catch (Exception e) {
@@ -279,8 +283,8 @@ public class Fotos_Faltantes extends AppCompatActivity implements DatePickerDial
             return null;
         }
         protected void onPostExecute (String file_url){
-           // if(!lista_mal.isEmpty())
             pDialog1.dismiss();
+            //Envía la lista al adapter si es que no está vacía
             if(!lista_mal.isEmpty())
             cargarLista();
             else{
@@ -294,10 +298,9 @@ public class Fotos_Faltantes extends AppCompatActivity implements DatePickerDial
     }
 
     public void cargarLista(){
-    //    List<Tarea> tareas = fu.llenar_tarea(getApplicationContext(),ac);
-        //Log.e("AQUIIIII",tareas[0].getIdVer());
+        //Envía la Lista para cargar los datos en el Custom Adapter FotoAdapter
         adapter = new FotoAdapter(lista_mal,getApplicationContext(),Fotos_Faltantes.this);
-        recyclerlista.setAdapter(adapter);
+        recyclerLstFotosFaltantes.setAdapter(adapter);
 
     }
 }

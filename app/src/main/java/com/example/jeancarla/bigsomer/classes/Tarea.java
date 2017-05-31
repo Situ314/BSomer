@@ -21,6 +21,7 @@ public class Tarea {
     private String ub_longitud;
     private String medidor;
     private String vip;
+    private String f_asignacion;
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
     public String getIdtipo() {
@@ -277,6 +278,14 @@ public class Tarea {
      */
     public void setVip(String vip) {
         this.vip = vip;
+    }
+
+    public String getF_asignacion() {
+        return f_asignacion;
+    }
+
+    public void setF_asignacion(String f_asignacion) {
+        this.f_asignacion = f_asignacion;
     }
 
     public Map<String, Object> getAdditionalProperties() {

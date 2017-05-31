@@ -13,6 +13,7 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 
@@ -28,7 +29,12 @@ import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by Jean Carla on 17/10/2016.
@@ -42,6 +48,9 @@ public class TareaAdapter extends RecyclerView.Adapter<TareaAdapter.TareaViewHol
     private MapView map;
     private SupportMapFragment mMapFragment;
     private GoogleMap mMap;
+    private String [] v_fecha;
+    private String f_asignacion, fecha_faltante;
+    private Calendar fechaYhora = Calendar.getInstance();
     /*
 Contexto donde actua el recycler view
  */
@@ -67,11 +76,23 @@ Contexto donde actua el recycler view
     @Override
     public void onBindViewHolder(TareaViewHolder viewHolder, int i) {
 
+        Calendar c = Calendar.getInstance();
 
         viewHolder.tarea.setText("Tarea nro. " + items.get(i).getIdVer());
         viewHolder.nombre.setText(items.get(i).getNombre());
         viewHolder.zona.setText(items.get(i).getZona());
         viewHolder.direccion.setText("                    " + items.get(i).getDireccion());
+
+        long diferencia = 2880 - Long.parseLong(items.get(i).getF_asignacion());
+
+        Log.e("DIFERENCIA: ",diferencia+"");
+        if(diferencia < 0){
+            viewHolder.iv.setBackgroundResource(R.color.colorAccent);
+        }else if(diferencia < 240){
+            viewHolder.iv.setBackgroundResource(R.color.colorWarning);
+        }else if (diferencia < 1440){
+            viewHolder.iv.setBackgroundResource(R.color.colorMid);
+        }
 
         if(!items.get(i).getVip().equals("2"))
             viewHolder.iv_vip.setVisibility(View.GONE);
@@ -79,22 +100,22 @@ Contexto donde actua el recycler view
         switch (items.get(i).getIdtipo()) {
 
             case ("1"):
-                viewHolder.iv.setImageResource(R.drawable.ic_dom);
+                viewHolder.iv.setImageResource(R.drawable.tic_dom);
                 break;
             case ("5"):
-                viewHolder.iv.setImageResource(R.drawable.ic_ind);
+                viewHolder.iv.setImageResource(R.drawable.tic_ind);
                 break;
             case ("4"):
-                viewHolder.iv.setImageResource(R.drawable.ic_dep);
+                viewHolder.iv.setImageResource(R.drawable.tic_dep);
                 break;
             case ("10"):
-                viewHolder.iv.setImageResource(R.drawable.ic_vscompra);
+                viewHolder.iv.setImageResource(R.drawable.tic_vscompra);
                 break;
             case ("11"):
-                viewHolder.iv.setImageResource(R.drawable.ic_vscons);
+                viewHolder.iv.setImageResource(R.drawable.tic_vscons);
                 break;
             case ("12"):
-                viewHolder.iv.setImageResource(R.drawable.ic_vsref);
+                viewHolder.iv.setImageResource(R.drawable.tic_vsref);
                 break;
         }
     }
@@ -188,6 +209,32 @@ Contexto donde actua el recycler view
         comentarios = items.get(position).getReferencias();
         nombre_empresa = items.get(position).getNombreEmpresa();
 
+        long diferencia = 2880 - Long.parseLong(items.get(position).getF_asignacion());
+        long diff = diferencia * 60000;
+
+        if(diff > 0) {
+            long secondsInMilli = 1000;
+            long minutesInMilli = secondsInMilli * 60;
+            long hoursInMilli = minutesInMilli * 60;
+            long daysInMilli = hoursInMilli * 24;
+
+            long elapsedDays = diff / daysInMilli;
+            diff = diff % daysInMilli;
+
+            long elapsedHours = diff / hoursInMilli;
+            diff = diff % hoursInMilli;
+
+            long elapsedMinutes = diff / minutesInMilli;
+            diff = diff % minutesInMilli;
+
+            long elapsedSeconds = diff / secondsInMilli;
+
+            fecha_faltante = elapsedDays + " días " + elapsedHours + " horas " + elapsedMinutes + " minutos";
+        }
+        else{
+            fecha_faltante = "Esta verificación ya se encuentra con RETRASO";
+        }
+
         Intent i = new Intent(context, Mapa_Detalles.class);
         Bundle bundle = new Bundle();
         bundle.putSerializable("cliente", cliente);
@@ -202,6 +249,7 @@ Contexto donde actua el recycler view
         bundle.putSerializable("nombre_empresa",nombre_empresa);
         bundle.putSerializable("ci", ci);
         bundle.putSerializable("comentarios", comentarios);
+        bundle.putSerializable("falta", fecha_faltante);
         i.putExtras(bundle);
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
@@ -224,6 +272,7 @@ Contexto donde actua el recycler view
         public TextView direccion;
         public ItemClickListener listener;
         public ItemLongClickListener listenerl;
+        public LinearLayout advertencia;
 
         public ImageView iv;
         public ImageView iv_vip;
@@ -236,6 +285,7 @@ Contexto donde actua el recycler view
             direccion = (TextView) v.findViewById(R.id.direccion);
             iv = (ImageView) v.findViewById(R.id.imageView2);
             iv_vip = (ImageView) v.findViewById(R.id.iv_vip);
+            //advertencia = (LinearLayout) v.findViewById(R.id.tarda);
             this.listener = listener;
             this.listenerl = longlistener;
 

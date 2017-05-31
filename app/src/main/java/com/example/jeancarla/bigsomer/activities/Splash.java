@@ -8,6 +8,10 @@ import android.view.WindowManager;
 
 import com.example.jeancarla.bigsomer.R;
 
+/*IMAGEN QUE SE MUESTRA
+ AL PRINCIPIO DE LA
+ APLICACIÓN*/
+
 public class Splash extends Activity {
 
     @Override

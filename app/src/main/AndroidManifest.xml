@@ -80,7 +80,8 @@
             android:screenOrientation="landscape">
             >
         </activity>
-        <activity android:name=".activities.Formulario_Visita"></activity>
+        <activity android:name=".activities.Formulario_Visita" />
+        <activity android:name=".activities.MapaActivity"></activity>
     </application>
 
 </manifest>

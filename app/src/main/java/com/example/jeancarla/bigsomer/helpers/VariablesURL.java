@@ -27,11 +27,10 @@ public class VariablesURL {
      * URLs del Web Service
      */
 
-    public static final String GET = "http://" + IP + PUERTO_HOST + "/obtener_metas.php";
     public static final String GET_LOGIN = "http://" + IP + "login.php?nombre_usuario=";
     public static final String GET_LOGIN2 = "http://" + IP + "login2.php?nombre_usuario=";
     public static final String GET_USER = "http://" + IP + "/descargar_datos_usuario.php?nombre_usuario=";
-    public static final String GET_TAREA = "http://" + IP + "descargar_tareas_2.php?id_agent=";
+    public static final String GET_TAREA = "http://" + IP + "descargar_tareas_f.php?id_agent=";
     public static final String GET_PICS = "http://" + IP + "check_pics.php";
     public static final String CHECK = "http://" + IP + "check.php";
     public static final String GET_CLI = "http://" + IP + "descargar_clientes.php";

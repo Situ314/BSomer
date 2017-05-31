@@ -25,7 +25,6 @@ import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -42,7 +41,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
@@ -50,28 +48,33 @@ import java.util.Map;
 
 public class Formulario_Visita extends AppCompatActivity {
 
-    private EditText et_comentarios, et_fecha;
+    //Views
+    private EditText etComentarios, etFecha;
 
-    private Button btn_elegir;
+    //Fechas
+    private int mYear, mMonth, mDay;
+    private Calendar fechaYhora = Calendar.getInstance();
+    SimpleDateFormat fecha = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    String fecha_actual;
+    private Button btnElegirFecha;
 
+    //Variables Localizacion
     private double lat = 0;
     private double lon = 0;
     public LocationManager locationManager;
     public LocationListener locationListener;
     public Location location;
-    private ImageView iv_location;
+    private ImageView ivLocation;
 
+    //DataBase
     DBHelper crearBD;
     private SQLiteDatabase db;
 
+    //Recibir ID anterior verif.
     private String id_ver;
-    private int mYear, mMonth, mDay;
 
-    private Calendar fechaYhora = Calendar.getInstance();
-    SimpleDateFormat fecha = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    String fecha_actual;
-
-    private String e_comentarios, e_fecha;
+    //Variables para enviar luego
+    private String comentarios_enviar, fecha_enviar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,12 +83,13 @@ public class Formulario_Visita extends AppCompatActivity {
 
         id_ver = getIntent().getStringExtra("id_ver");
 
-        et_comentarios = (EditText) findViewById(R.id.v_comentarios);
-        et_fecha = (EditText) findViewById(R.id.v_fecha);
+        etComentarios = (EditText) findViewById(R.id.v_comentarios);
+        etFecha = (EditText) findViewById(R.id.v_fecha);
 
-        btn_elegir = (Button) findViewById(R.id.b_elegir);
+        //Boton para elegir fecha y sacar un dialogo con un calendario
+        btnElegirFecha = (Button) findViewById(R.id.b_elegir);
 
-        btn_elegir.setOnClickListener(new View.OnClickListener() {
+        btnElegirFecha.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 final Calendar c = Calendar.getInstance();
@@ -99,7 +103,7 @@ public class Formulario_Visita extends AppCompatActivity {
                             @Override
                             public void onDateSet(DatePicker view, int year,
                                                   int monthOfYear, int dayOfMonth) {
-                                et_fecha.setText(year + "-" + (monthOfYear + 1) + "-" + dayOfMonth);
+                                etFecha.setText(year + "-" + (monthOfYear + 1) + "-" + dayOfMonth);
                                 //Log.e("SITU DATE: ", datee);
                             }
                         }, mYear, mMonth, mDay);
@@ -109,7 +113,7 @@ public class Formulario_Visita extends AppCompatActivity {
 
         //******************LOCATION THINGS
 
-        iv_location = (ImageView) findViewById(R.id.iv_location);
+        ivLocation = (ImageView) findViewById(R.id.iv_location);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         location = locationManager
                 .getLastKnownLocation(LocationManager.GPS_PROVIDER);
@@ -119,8 +123,7 @@ public class Formulario_Visita extends AppCompatActivity {
                 lat = location.getLatitude();
                 lon = location.getLongitude();
 
-                iv_location.setImageResource(R.drawable.ic_location_on_black_24dp);
-                //estado1.setImageResource(R.drawable.check);
+                ivLocation.setImageResource(R.drawable.ic_location_on_black_24dp);
                 if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     // TODO: Consider calling
                     //    ActivityCompat#requestPermissions
@@ -156,6 +159,7 @@ public class Formulario_Visita extends AppCompatActivity {
                 5000, 0, locationListener);
 
         //LOCATION*************************************
+
         fecha_actual = fecha.format(fechaYhora.getTime());
         setToolbar();
     }
@@ -212,10 +216,11 @@ public class Formulario_Visita extends AppCompatActivity {
             dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
             dialog.setContentView(R.layout.dialog_nuevo);
            dialog.show();
+            //Verificar si agarro Latitud y longitud
             if (lat != 0 && lon != 0) {
-
-                if(!et_comentarios.getText().equals("") && !et_fecha.getText().equals("")){
-
+                //Verifica que todos los campos estés llenos
+                if(!etComentarios.getText().equals("") && !etFecha.getText().equals("")){
+                    //Crear diálogo preguntando si el verificador está seguro de enviar la visita
                     TextView titulo = (TextView) dialog.findViewById(R.id.info_text);
                     titulo.setText("ENVIAR DATOS DE LA VISITA");
 
@@ -242,6 +247,7 @@ public class Formulario_Visita extends AppCompatActivity {
                         }
                     });
                 }else{
+                    //Diálogo indicando que todos los campos deben estar llenos
                     TextView titulo = (TextView) dialog.findViewById(R.id.info_text);
                     titulo.setText("TODOS LOS CAMPOS DEBEN ESTAR LLENOS");
 
@@ -268,6 +274,7 @@ public class Formulario_Visita extends AppCompatActivity {
 
 
             } else {
+                //Diálogo indicando que deben encontrarse las coordenadas antes de  enviar
                 TextView titulo = (TextView) dialog.findViewById(R.id.info_text);
                 titulo.setText("NO SE ENCONTRARON COORDENADAS");
 
@@ -292,7 +299,9 @@ public class Formulario_Visita extends AppCompatActivity {
                 return true;
             }
 
-        } else {
+        }
+        //Botón para volver atrás
+        else {
             dialog = new Dialog(Formulario_Visita.this);
             dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
             dialog.setContentView(R.layout.dialog_two);
@@ -326,29 +335,27 @@ public class Formulario_Visita extends AppCompatActivity {
         progressDialog.setMessage("Enviando Datos de Visita....");
         progressDialog.show();
 
-        e_comentarios = et_comentarios.getText().toString();
-        e_fecha = et_fecha.getText().toString();
+        comentarios_enviar = etComentarios.getText().toString();
+        fecha_enviar = etFecha.getText().toString();
 
+        //Abrir BD y crear ContentValues para agregar los datos a la tabla Visita
         crearBD = new DBHelper(Formulario_Visita.this);
         db = crearBD.getWritableDatabase();
         ContentValues values1 = new ContentValues();
         values1.put("id_sol", id_ver);
         values1.put("lat", lat);
         values1.put("lon", lon);
-        values1.put("comentarios", e_comentarios);
+        values1.put("comentarios", comentarios_enviar);
         values1.put("fecha_realizada", fecha_actual);
-        values1.put("fecha_regreso", e_fecha);
+        values1.put("fecha_regreso", fecha_enviar);
         values1.put("estado", "pendiente");
         db.insert("visita", null, values1);
 
-        //fu.eliminar_tarea(getApplicationContext(),id_ver);
-        System.out.println("LAT: " + lat + " LON: " + lon);
-
+        //Crea un HashMap para generar el JSON
         HashMap<String, String> map = new HashMap<>();// Mapeo previo
-
         map.put("id_ver", id_ver);
-        map.put("comentarios", e_comentarios);
-        map.put("fecha_regreso", e_fecha);
+        map.put("comentarios", comentarios_enviar);
+        map.put("fecha_regreso", fecha_enviar);
         map.put("lat", lat + "");
         map.put("lon", lon + "");
         map.put("fecha_realizada", fecha_actual);
@@ -376,7 +383,8 @@ public class Formulario_Visita extends AppCompatActivity {
                             public void onErrorResponse(VolleyError error) {
                                 Log.d("SITU", "Error Volley: " + error.getMessage());
                                 Toast.makeText(getApplicationContext(), "No se pudo comunicar con el servidor en este momento, inténtelo más tarde...", Toast.LENGTH_LONG).show();
-
+                                //No se puede guardar en el servidor
+                                //por lo tanto se guarda en la memoria del celular
                                 Intent i = new Intent(getApplicationContext(), MenuPrincipal.class);
                                 finish();
                                 startActivity(i);

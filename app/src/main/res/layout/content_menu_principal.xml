@@ -101,4 +101,23 @@
         android:layout_alignEnd="@+id/lista_tareas"
         android:layout_alignLeft="@+id/lista_tareas"
         android:layout_alignStart="@+id/lista_tareas" />
+
+    <Button
+        android:layout_width="300dp"
+        android:layout_height="wrap_content"
+        android:text="MAPA"
+        android:paddingEnd="20dp"
+        android:paddingRight="20dp"
+        android:paddingStart="20dp"
+        android:paddingLeft="20dp"
+        android:layout_marginTop="15dp"
+        android:id="@+id/mapa"
+        android:layout_below="@+id/fotos"
+        android:drawableLeft="@drawable/ic_room_white_24dp"
+        android:background="@drawable/rectangulo_login"
+        android:textColor="@android:color/white"
+        android:layout_alignRight="@+id/lista_tareas"
+        android:layout_alignEnd="@+id/lista_tareas"
+        android:layout_alignLeft="@+id/lista_tareas"
+        android:layout_alignStart="@+id/lista_tareas" />
 </RelativeLayout>

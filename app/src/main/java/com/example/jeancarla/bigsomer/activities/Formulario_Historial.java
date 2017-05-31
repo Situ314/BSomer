@@ -685,7 +685,6 @@ public class Formulario_Historial extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-
                 intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(fot));
                 startActivityForResult(intent, REQUEST_CAMERA);
             }
